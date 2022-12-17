@@ -9,6 +9,11 @@ class Message:
     count: int = field()
     count_new_papers: int = field()
     total: int = field()
+    
+    def __repr__(self):
+        return (f"Message(status='{self.status}', interval='{self.interval}', "
+                f"cursor='{self.cursor}', count={self.count}, "
+                f"count_new_papers={self.count_new_papers}, total={self.total})")
 
 def split_authors(authors: str) -> list:
     """Split a string of authors into a list of individual author names."""
@@ -16,24 +21,41 @@ def split_authors(authors: str) -> list:
 
 @define
 class ManuscriptMetadata:
-    doi: str = field()
     title: str = field()
     authors: list = field(converter=split_authors)
+    date: str = field()
+    category: str = field()
+    doi: str = field()
     author_corresponding: str = field()
     author_corresponding_institution: str = field()
-    date: str = field()
     version: str = field()
     type: str = field()
     license: str = field()
-    category: str = field()
-    jatsxml: str = field()
     abstract: str = field()
     published: str = field()
     server: str = field()
+    jatsxml: str = field()
+    
+    def __repr__(self):
+        return f"""ManuscriptMetadata(
+    title='{self.title}',
+    authors={self.authors},
+    date='{self.date}',
+    category='{self.category}',
+    doi='{self.doi}',
+    author_corresponding='{self.author_corresponding}',
+    author_corresponding_institution='{self.author_corresponding_institution}',
+    version='{self.version}',
+    type='{self.type}',
+    license='{self.license}',
+    abstract='{self.abstract}',
+    published='{self.published}',
+    server='{self.server}',
+    jatsxml='{self.jatsxml}')"""
     
 
 class BioRxivAPI:
-    def __init__(self, server, interval=None, cursor=0, format="json"):
+    def __init__(self, server=None, interval=None, cursor=0, format="json"):
         self.base_url = "https://api.biorxiv.org/details/"
         self.server = server
         self.interval = interval
@@ -68,3 +90,8 @@ class BioRxivAPI:
         
         # Return the parsed messages and collections
         return parsed_messages, parsed_collections
+    
+    def query_many_records(self, num_records):
+        # Initialize the cursor
+        cursor = 0
+        
