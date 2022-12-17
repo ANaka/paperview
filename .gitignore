@@ -48,3 +48,4 @@ dist/**
 *.i18n.json
 **/*.pyc
 !**/.gitignore
+**/__pycache__/**
