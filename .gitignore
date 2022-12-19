@@ -49,3 +49,5 @@ dist/**
 **/*.pyc
 !**/.gitignore
 **/__pycache__/**
+poetry.lock
+**/poetry.lock
