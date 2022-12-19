@@ -1,0 +1,36 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.3.0
+    hooks:
+      # list of supported hooks: https://pre-commit.com/hooks.html
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict # check for files with merge conflict strings
+        args: ["--assume-in-merge"] #  and run this check even when not explicitly in a merge
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ["--maxkb=4000"] # max file size 4000 instead of 500 kb
+      - id: debug-statements
+      - id: detect-private-key
+      - id: check-symlinks
+      - id: check-toml
+      - id: destroyed-symlinks
+      - id: mixed-line-ending
+      - id: name-tests-test
+
+  # python code formatting
+  - repo: https://github.com/psf/black
+    rev: 22.8.0
+    hooks:
+      - id: black
+        additional_dependencies: ["click==8.0.4"]
+        args: [
+        --line-length, "100"
+        ]
+
+  # python import sorting
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.10.1
+    hooks:
+      - id: isort
+        args: ["--profile", "black", "--filter-files"]
