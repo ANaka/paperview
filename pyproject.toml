@@ -17,6 +17,7 @@ Pillow = "^9.3.0"
 PyMuPDF = "^1.21.1"
 jupyter = "^1.0.0"
 ipykernel = "^6.19.3"
+"pdfminer.six" = "^20221105"
 
 [tool.poetry.dev-dependencies]
 ipykernel = "^6.19.2"
