@@ -1,3 +1,6 @@
+import os
+import tempfile
+
 import requests
 from bs4 import BeautifulSoup
 
@@ -20,3 +23,23 @@ def get_content_detail_for_page(url: str) -> ArticleDetail:
 
     response = query_content_detail_by_doi(_doi)
     return ArticleDetail(**response.json()['collection'][0])
+
+
+class NamedTemporaryPDF(object):
+    """class that downloads pdf and makes it available as a named tempfile in a context manager"""
+
+    def __init__(self, url):
+        self.url = url
+        self.temp_file_name = None
+
+    def __enter__(self):
+        response = requests.get(self.url)
+        assert response.status_code == 200, f"Failed to download PDF from {self.url}"
+        f = tempfile.NamedTemporaryFile(mode='wb', delete=False)
+        f.write(response.content)
+        self.temp_file_name = f.name
+        return self.temp_file_name
+
+    def __exit__(self, type, value, traceback):
+        if self.temp_file_name:
+            os.remove(self.temp_file_name)
