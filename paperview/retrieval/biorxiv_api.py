@@ -119,10 +119,6 @@ def validate_interval(interval: str) -> bool:
     if re.match(r"^\d+$", interval):
         return True
 
-    # Check if the interval is a numeric value with the letter 'd' for the most recent N days of posts
-    if re.match(r"^\d+d$", interval):
-        return True
-
     return False
 
 
