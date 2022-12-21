@@ -8,10 +8,12 @@ It is currently in a very early stage of development, and is not yet ready for u
 
 # Installation
 
-This project requires poetry to be installed. See instructions [here](https://python-poetry.org/docs/#installation).
+This project requires poetry to be installed. See instructions [here](https://python-poetry.org/docs/#installation). Also recommend using pyenv to manage python versions.
 
 Once poetry is installed, run the following commands to install the dependencies:
 
+`pyenv shell 3.10`
+`poetry env use python3.10`
 `poetry install`
 
 # Development
@@ -23,4 +25,3 @@ When developing, it is recommended to use the pre-commit hooks to ensure that co
 ## Tests
 
 To run the tests, run the following command: `poetry run pytest`
-
