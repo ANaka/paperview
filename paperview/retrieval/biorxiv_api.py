@@ -61,6 +61,10 @@ class ArticleDetail:
     server='{self.server}',
     jatsxml='{self.jatsxml}')"""
 
+    @property
+    def pdf_url(self):
+        return f'https://www.biorxiv.org/content/{self.doi}v{self.version}.full.pdf'
+
 
 BASE_URL = "https://api.biorxiv.org"
 
