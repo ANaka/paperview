@@ -1,12 +1,18 @@
+import datetime
+from typing import List
+
 import pytest
 import requests
 
-from paperview.retrieval.biorxiv import (
+from paperview.retrieval.biorxiv_api import (
+    Article,
     ArticleDetail,
     Message,
     get_all_content_details_by_interval,
+    get_content_detail_for_page,
     query_content_detail_by_doi,
     query_content_detail_by_interval,
+    validate_interval,
 )
 
 
@@ -32,14 +38,30 @@ def example_article_detail():
 
 def test_query_content_detail_by_doi_matches_example_article_detail(example_article_detail):
     response = query_content_detail_by_doi(doi=example_article_detail["doi"])
-
     assert response.status_code == 200
     assert response.json()["collection"][0] == example_article_detail
 
 
-from typing import List
-
-import pytest
+@pytest.mark.parametrize(
+    "interval, expected",
+    [
+        ("2022-01-01/2022-01-31", True),
+        ("2022-01-01/2022-02-01", True),
+        ("2022-01-01/2022-01-32", False),
+        ("2022-01-01/2022-00-01", False),
+        ("2022-01-01/2022-01", False),
+        ("2020", True),
+        ("2022-01", False),
+        ("2022-01-01", False),
+        ("2022-01-01/2022-01-01", False),
+        ("invalid", False),
+        ("100", True),
+        ("100d", True),
+        ("100days", False),
+    ],
+)
+def test_validate_interval(interval, expected):
+    assert validate_interval(interval) == expected
 
 
 def test_query_content_detail_by_interval():
@@ -69,6 +91,15 @@ def test_query_content_detail_by_interval():
 def test_get_all_content_details_by_interval():
     # Test a valid interval
     interval = "2018-08-21/2018-08-28"
+    result = get_all_content_details_by_interval(interval)
+    assert isinstance(result, list)
+    assert len(result) >= 0
+
+
+def test_query_recent_content():
+    # Test content from 8 days ago through yesterday
+    yesterday = datetime.date.today() - datetime.timedelta(days=1)
+    interval = f"{yesterday - datetime.timedelta(days=7)}/{yesterday}"
     result = get_all_content_details_by_interval(interval)
     assert isinstance(result, list)
     assert len(result) >= 0

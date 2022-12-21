@@ -110,13 +110,38 @@ def validate_interval(interval: str) -> bool:
     return False
 
 
+import datetime
+
+
 def validate_interval(interval: str) -> bool:
+    """
+    Checks if the interval is a valid format for use in API requests.
+
+    The interval can be 1) two YYYY-MM-DD dates separated by '/', 2) a numeric value for the N most recent posts,
+    or 3) a numeric value with the letter 'd' for the most recent N days of posts.
+
+    Args:
+        interval (str): the interval to be checked
+
+    Returns:
+        bool: True if the interval is valid, False otherwise
+    """
     # Check if the interval is a range of dates
     if re.match(r"\d{4}-\d{2}-\d{2}/\d{4}-\d{2}-\d{2}", interval):
-        return True
+        start, end = interval.split("/")
+        try:
+            start_date = datetime.datetime.strptime(start, "%Y-%m-%d")
+            end_date = datetime.datetime.strptime(end, "%Y-%m-%d")
+            return True
+        except ValueError:
+            return False
 
     # Check if the interval is a numeric value for the N most recent posts
     if re.match(r"^\d+$", interval):
+        return True
+
+    # Check if the interval is a numeric value with the letter 'd' for the most recent N days of posts
+    if re.match(r"\d+d", interval):
         return True
 
     return False
