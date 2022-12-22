@@ -8,9 +8,9 @@ from paperview.retrieval.biorxiv_api import (
     Article,
     ArticleDetail,
     Message,
+    _query_content_detail_by_doi,
     get_all_content_details_by_interval,
     get_content_detail_for_page,
-    query_content_detail_by_doi,
     query_content_detail_by_interval,
     validate_interval,
 )
@@ -37,7 +37,7 @@ def example_article_detail():
 
 
 def test_query_content_detail_by_doi_matches_example_article_detail(example_article_detail):
-    response = query_content_detail_by_doi(doi=example_article_detail["doi"])
+    response = _query_content_detail_by_doi(doi=example_article_detail["doi"])
     assert response.status_code == 200
     assert response.json()["collection"][0] == example_article_detail
 
@@ -103,3 +103,23 @@ def test_query_recent_content():
     result = get_all_content_details_by_interval(interval)
     assert isinstance(result, list)
     assert len(result) >= 0
+
+
+def test_create_Article_from_ArticleDetail(example_article_detail):
+    article_detail = ArticleDetail(**example_article_detail)
+    article = Article(article_detail)
+    assert article.article_detail == article_detail
+
+
+def test_create_Article_from_doi(example_article_detail):
+    article = Article.from_doi(example_article_detail["doi"])
+    assert article.article_detail.doi == example_article_detail["doi"]
+
+
+def test_create_Article_from_content_page_url(
+    url='https://www.biorxiv.org/content/10.1101/456574v1',
+):
+    article = Article.from_content_page_url(url)
+
+    article_detail = ArticleDetail(**example_article_detail)
+    assert article.article_detail == article_detail
