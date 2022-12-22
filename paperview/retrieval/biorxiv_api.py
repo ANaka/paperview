@@ -1,10 +1,12 @@
+import datetime
 import re
 from typing import List
 
 import requests
 from attrs import define, field
 from bs4 import BeautifulSoup
-from IPython.core.display import HTML, display
+from IPython.core.display import HTML
+from IPython.display import display
 
 from paperview.retrieval import pdf_extraction
 
@@ -73,7 +75,7 @@ ArticleDetail(
         return f'https://www.biorxiv.org/content/{self.doi}v{self.version}.full.pdf'
 
 
-def query_content_detail_by_doi(
+def _query_content_detail_by_doi(
     doi: str,
     server: str = "biorxiv",  # biorxiv or medRxiv
     format: str = "JSON",  # JSON or XML
@@ -85,32 +87,13 @@ def query_content_detail_by_doi(
     return response
 
 
-def validate_interval(interval: str) -> bool:
-    """
-    Checks if the interval is valid
-
-    Args:
-        interval (str): the interval to be checked
-
-    Returns:
-        bool: True if the interval is valid, False otherwise
-    """
-    # Check if the interval is a range of dates
-    if re.match(r"\d{4}-\d{2}-\d{2}/\d{4}-\d{2}-\d{2}", interval):
-        return True
-
-    # Check if the interval is a numeric value for the N most recent posts
-    if re.match(r"^\d+$", interval):
-        return True
-
-    # Check if the interval is a numeric value with the letter 'd' for the most recent N days of posts
-    if re.match(r"^\d+d$", interval):
-        return True
-
-    return False
-
-
-import datetime
+def get_content_detail_by_doi(
+    doi: str,
+    server: str = "biorxiv",  # biorxiv or medRxiv
+    format: str = "JSON",  # JSON or XML
+) -> ArticleDetail:
+    response = _query_content_detail_by_doi(doi, server, format)
+    return ArticleDetail(**response.json()["collection"][0])
 
 
 def validate_interval(interval: str) -> bool:
@@ -243,8 +226,7 @@ def get_content_detail_for_page(url: str) -> ArticleDetail:
     doi_url = doi_element.get_text()
     _doi = doi_url.split("https://doi.org/")[-1].strip()
 
-    response = query_content_detail_by_doi(_doi)
-    return ArticleDetail(**response.json()['collection'][0])
+    return get_content_detail_by_doi(_doi)
 
 
 class Article(object):
@@ -253,17 +235,26 @@ class Article(object):
         article_detail: ArticleDetail,
         extract_images: bool = True,
         extract_text: bool = True,
-        extract_html: bool = True,
+        extract_html: bool = False,
+        extract_tag: bool = True,
+        extract_layout: bool = True,
     ):
         self.article_detail = article_detail
 
         with pdf_extraction.NamedTemporaryPDF(self.article_detail.pdf_url) as f:
             if extract_images:
                 self.images = pdf_extraction.extract_images(f)
+                self.merged_images = pdf_extraction.merge_images(self.images)
             if extract_text:
                 self.text = pdf_extraction.extract_text(f)
             if extract_html:
-                self.html = pdf_extraction.extract_html(f)
+                self.html = pdf_extraction._extract_text_to_fp(f, output_type='html')
+            if extract_tag:
+                self.tag = pdf_extraction._extract_text_to_fp(
+                    f, output_type='tag', codec='utf-8', bytes_output=True
+                )
+            if extract_layout:
+                self.layout = pdf_extraction.extract_layout(f)
 
     def __repr__(self):
         return f"""
@@ -283,8 +274,7 @@ Article(
 
     @classmethod
     def from_doi(cls, doi: str, server: str = "biorxiv", **kwargs):
-        response = query_content_detail_by_doi(doi, server=server)
-        article_detail = ArticleDetail(**response.json()["collection"])
+        article_detail = get_content_detail_by_doi(doi, server=server)
         return cls(article_detail, **kwargs)
 
     @classmethod
