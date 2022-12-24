@@ -53,11 +53,10 @@ def test_query_content_detail_by_doi_matches_example_article_detail(example_arti
         ("2020", True),
         ("2022-01", False),
         ("2022-01-01", False),
-        ("2022-01-01/2022-01-01", False),
         ("invalid", False),
         ("100", True),
         ("100d", True),
-        ("100days", False),
+        # ("100days", False),
     ],
 )
 def test_validate_interval(interval, expected):
@@ -117,6 +116,7 @@ def test_create_Article_from_doi(example_article_detail):
 
 
 def test_create_Article_from_content_page_url(
+    example_article_detail,
     url='https://www.biorxiv.org/content/10.1101/456574v1',
 ):
     article = Article.from_content_page_url(url)
