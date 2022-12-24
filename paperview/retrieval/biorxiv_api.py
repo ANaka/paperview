@@ -1,6 +1,6 @@
 import datetime
 import re
-from typing import List
+from typing import Dict, List
 
 import requests
 from attrs import define, field
@@ -179,12 +179,12 @@ def get_all_content_details_by_interval(
     It takes a date interval, and returns a list of all the articles in that interval
 
     Args:
-      interval (str): The interval of time to query. This can be one of the following:
-      server (str): The server to query. This can be either "bioRxiv" or "medRxiv". Defaults to bioRxiv
-      format (str): The format of the response. Can be json or xml. Defaults to json
+        interval (str): The interval of time to query. This can be one of the following:
+        server (str): The server to query. This can be either "bioRxiv" or "medRxiv". Defaults to bioRxiv
+        format (str): The format of the response. Can be json or xml. Defaults to json
 
     Returns:
-      A list of dictionaries.
+        A list of dictionaries.
     """
     all_results = []
     cursor = 0
@@ -214,10 +214,10 @@ def get_content_detail_for_page(url: str) -> ArticleDetail:
     It takes a URL, finds the DOI, and then queries the API for the article details
 
     Args:
-      url (str): The URL of the article you want to get the metadata for.
+        url (str): The URL of the article you want to get the metadata for.
 
     Returns:
-      ArticleDetail
+        ArticleDetail
     """
     html = requests.get(url).text
     soup = BeautifulSoup(html, 'html.parser')
@@ -233,28 +233,12 @@ class Article(object):
     def __init__(
         self,
         article_detail: ArticleDetail,
-        extract_images: bool = True,
-        extract_text: bool = True,
-        extract_html: bool = False,
-        extract_tag: bool = True,
-        extract_layout: bool = True,
+        **kwargs,
     ):
         self.article_detail = article_detail
 
         with pdf_extraction.NamedTemporaryPDF(self.article_detail.pdf_url) as f:
-            if extract_images:
-                self.images = pdf_extraction.extract_images(f)
-                self.merged_images = pdf_extraction.merge_images(self.images)
-            if extract_text:
-                self.text = pdf_extraction.extract_text(f)
-            if extract_html:
-                self.html = pdf_extraction._extract_text_to_fp(f, output_type='html')
-            if extract_tag:
-                self.tag = pdf_extraction._extract_text_to_fp(
-                    f, output_type='tag', codec='utf-8', bytes_output=True
-                )
-            if extract_layout:
-                self.layout = pdf_extraction.extract_layout(f)
+            self.data = pdf_extraction.extract_all(f, **kwargs)
 
     def __repr__(self):
         return f"""
