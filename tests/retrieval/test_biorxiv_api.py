@@ -121,5 +121,5 @@ def test_create_Article_from_content_page_url(
 ):
     article = Article.from_content_page_url(url)
 
-    article_detail = ArticleDetail(**example_article_detail)
+    article_detail = ArticleDetail(**example_article_detail())
     assert article.article_detail == article_detail
