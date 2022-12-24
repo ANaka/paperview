@@ -179,12 +179,12 @@ def get_all_content_details_by_interval(
     It takes a date interval, and returns a list of all the articles in that interval
 
     Args:
-      interval (str): The interval of time to query. This can be one of the following:
-      server (str): The server to query. This can be either "bioRxiv" or "medRxiv". Defaults to bioRxiv
-      format (str): The format of the response. Can be json or xml. Defaults to json
+        interval (str): The interval of time to query. This can be one of the following:
+        server (str): The server to query. This can be either "bioRxiv" or "medRxiv". Defaults to bioRxiv
+        format (str): The format of the response. Can be json or xml. Defaults to json
 
     Returns:
-      A list of dictionaries.
+        A list of dictionaries.
     """
     all_results = []
     cursor = 0
@@ -214,10 +214,10 @@ def get_content_detail_for_page(url: str) -> ArticleDetail:
     It takes a URL, finds the DOI, and then queries the API for the article details
 
     Args:
-      url (str): The URL of the article you want to get the metadata for.
+        url (str): The URL of the article you want to get the metadata for.
 
     Returns:
-      ArticleDetail
+        ArticleDetail
     """
     html = requests.get(url).text
     soup = BeautifulSoup(html, 'html.parser')

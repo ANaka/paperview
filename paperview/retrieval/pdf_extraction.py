@@ -1,6 +1,6 @@
 import os
 import tempfile
-from typing import Dict, List, Union
+from typing import Dict, List, Tuple, Union
 
 import pandas as pd
 import pdfplumber
@@ -12,11 +12,11 @@ from tqdm import tqdm
 class NamedTemporaryPDF(object):
     """class that downloads pdf and makes it available as a named tempfile in a context manager"""
 
-    def __init__(self, url):
+    def __init__(self, url: str):
         self.url = url
         self.temp_file_name = None
 
-    def __enter__(self):
+    def __enter__(self) -> str:
         response = requests.get(self.url)
         assert response.status_code == 200, f"Failed to download PDF from {self.url}"
         f = tempfile.NamedTemporaryFile(mode='wb', delete=False)
@@ -30,13 +30,37 @@ class NamedTemporaryPDF(object):
 
 
 def extract_all(
-    pdf_path,
-    prog_bar=False,
+    pdf_path: str,
+    prog_bar: bool = False,
     extract_images: bool = True,
     extract_texts: bool = True,
     extract_words: bool = True,
     extract_tables: bool = True,
 ):
+    """
+    It takes a PDF file and returns a dictionary with the following keys:
+
+    - `images`: a list of dictionaries, each of which contains the image data and bounding box
+    coordinates
+    - `texts`: a list of strings, each of which is a line of text
+    - `words`: a pandas DataFrame, each row of which is a word and its bounding box coordinates
+    - `tables`: a list of pandas DataFrames, each of which is a table extracted from the PDF
+
+    The `extract_all` function is a wrapper around the `pdfplumber.open` function, which returns a `PDF`
+    object. The `PDF` object has a `pages` attribute, which is a list of `Page` objects. Each `Page`
+    object has a number of methods for extracting data from the page
+
+    Args:
+        pdf_path: The path to the PDF file you want to extract from.
+        prog_bar: Whether to show a progress bar. Defaults to False
+        extract_images (bool): bool = True,. Defaults to True
+        extract_texts (bool): bool = True,. Defaults to True
+        extract_words (bool): bool = True,. Defaults to True
+        extract_tables (bool): bool = True,. Defaults to True
+
+    Returns:
+        A dictionary with the keys 'images', 'texts', 'words', and 'tables'.
+    """
     pdf = pdfplumber.open(pdf_path)
     images = []
     texts = []
@@ -70,8 +94,9 @@ def extract_all(
     return {'images': images, 'texts': texts, 'words': pd.DataFrame(words), 'tables': tables}
 
 
-def identify_images_to_vertically_splice(image_list):
-    """Identifies images to vertically splice. Candidate images will be on the same page, have the same width, and the top of one image will be the bottom of the other image. Works for N images"""
+def identify_images_to_vertically_splice(image_list: List[dict]) -> List[Tuple[dict, dict]]:
+    """Identifies images to vertically splice.
+    Candidate images will be on the same page, have the same width, and the top of one image will be the bottom of the other image. Works for N images"""
     candidates = []
     for i, image1 in enumerate(image_list):
         for j, image2 in enumerate(image_list):
@@ -85,9 +110,9 @@ def identify_images_to_vertically_splice(image_list):
     return candidates
 
 
-def identify_images_to_horizontally_splice(image_list):
+def identify_images_to_horizontally_splice(image_list: List[Dict]) -> List[Tuple[Dict, Dict]]:
     """Identifies images to horizontally splice. Candidate images will be on the same page, have the same height, and the left of one image will be the right of the other image. Works for N images"""
-    candidates = []
+    candidates: List[Tuple[Dict, Dict]] = []
     for i, image1 in enumerate(image_list):
         for j, image2 in enumerate(image_list):
             if i == j:
@@ -99,7 +124,7 @@ def identify_images_to_horizontally_splice(image_list):
     return candidates
 
 
-def vertically_splice_image_pair(top_image, bottom_image):
+def vertically_splice_image_pair(top_image: Dict, bottom_image: Dict) -> Dict:
     """Vertically splices two images. Returns a single dictionary for the new image"""
     new_image = top_image.copy()
     new_image['y0'] = bottom_image['y0']
@@ -123,7 +148,7 @@ def vertically_splice_image_pair(top_image, bottom_image):
     return new_image
 
 
-def horizontally_splice_image_pair(left_image, right_image):
+def horizontally_splice_image_pair(left_image: dict, right_image: dict) -> dict:
     """Horizontally splices two images. Returns a single dictionary for the new image"""
     new_image = left_image.copy()
     new_image['x0'] = left_image['x0']
@@ -144,7 +169,7 @@ def horizontally_splice_image_pair(left_image, right_image):
     return new_image
 
 
-def splice_images(image_list):
+def splice_images(image_list: List) -> List:
     """Identifies sets of images to vertically splice and then splices them.
     For cases where images are split into N pieces, it iteratively merges them until there is one image"""
     new_image_list = image_list.copy()
