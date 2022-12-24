@@ -51,3 +51,5 @@ dist/**
 **/__pycache__/**
 poetry.lock
 **/poetry.lock
+paperview/sample_pdfs/**
+!paperview/sample_pdfs/__init__.py
