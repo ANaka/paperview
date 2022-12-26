@@ -1,5 +1,9 @@
 import datetime
+import os
 import re
+import tempfile
+import time
+import webbrowser
 from typing import Dict, List
 
 import requests
@@ -268,3 +272,73 @@ Article(
 
     def display_html(self):
         display(HTML(self.html))
+
+    def display_overview(self):
+        # Extract the list of image dictionaries from the 'data' attribute of the 'Article' instance
+        images = self.data['images']
+        detail = self.article_detail
+
+        # Generate the HTML that will display the images
+        html = '<html><body>'
+        html += f'<h1>{detail.title}</h1>'
+        html += f'<p>Authors: {"; ".join(detail.authors)}</p>'
+        html += f'<p>Date: {detail.date}</p>'
+        html += f'<p>Category: {detail.category}</p>'
+        html += f'<p>DOI: <a href="https://doi.org/{detail.doi}">{detail.doi}</a></p>'
+        html += f'<p>Corresponding author: {detail.author_corresponding}</p>'
+        html += (
+            f'<p>Corresponding author institution: {detail.author_corresponding_institution}</p>'
+        )
+        html += f'<p>Version: {detail.version}</p>'
+        html += f'<p>Type: {detail.type}</p>'
+        html += f'<p>License: {detail.license}</p>'
+        html += f'<p>Abstract: {detail.abstract}</p>'
+        html += f'<p>PDF URL: <a href="{detail.pdf_url}">{detail.pdf_url}</a></p>'
+        html += f'<p>JATS XML: <a href="{detail.jatsxml}">{detail.jatsxml}</a></p>'
+        html += '<hr>'
+
+        temp_files = []
+        for image in images:
+            image_number = image['image_number']
+            caption = image.get('caption', '')
+            # Save the image to a temporary file
+            with tempfile.NamedTemporaryFile(mode='wb', suffix='.jpg', delete=False) as f:
+                image['image'].save(f, format='JPEG')
+                # Flush the file to ensure that it is written to disk
+                f.flush()
+                # Use the temporary file's name as the 'src' attribute of an '<img>' element
+                temp_files.append(f.name)
+                html += f"""
+                <table>
+                    <tr>
+                        <td>
+                            <p>Figure {image_number}</p>
+                            <img src="{f.name}" width="{image["image"].width}" height="{image["image"].height}" style="max-width: 100%; height: auto;"/><br>
+                        </td>
+                        <td>
+                            <p>{caption}</p>
+                        </td>
+                    </tr>
+                </table>
+                <hr>
+                """
+        html += """
+            </body>
+        </html>
+        """
+
+        # Create a temporary file to hold the HTML
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.html') as f:
+            # Write the HTML to the temporary file
+            f.write(html)
+            # Flush the file to ensure that it is written to disk
+            f.flush()
+
+            webbrowser.open(f.name)
+
+        # wait one second
+        time.sleep(1)
+
+        # delete the temporary files
+        for f in temp_files:
+            os.remove(f)
