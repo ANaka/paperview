@@ -370,6 +370,9 @@ Article(
 
             webbrowser.open(f.name)
 
+            # wait one second
+            time.sleep(1)
+
         # wait one second
         time.sleep(1)
 
