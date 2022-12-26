@@ -327,7 +327,7 @@ Article(
             <table>
                 <tr>
                     <td>
-                        <img src="{temp_file_name}" width="{image["image"].width}" height="{image["image"].height}" style="max-width: 100%; height: auto;"/><br>
+                        <img src="{temp_file_name}" width="{image["image"].width}" height="{image["image"].height}" style="max-width: 75%; height: auto;"/><br>
                         <p>Figure {image_number}</p>
                     </td>
                     <td>
