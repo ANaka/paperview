@@ -1,25 +1,28 @@
 FROM python:3.8-slim
 
-# Install the system dependencies for the dependencies in the .toml file
+# install dependencies
 RUN apt-get update && apt-get install -y \
     libmagickwand-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Create a new user and switch to it
-RUN adduser --disabled-password --gecos '' paperview
-USER paperview
+# Configure Poetry
+ENV POETRY_VERSION=1.2.0
+ENV POETRY_HOME=/opt/poetry
+ENV POETRY_VENV=/opt/poetry-venv
+ENV POETRY_CACHE_DIR=/opt/.cache
 
-# Create a new virtual environment and activate it
-RUN python -m venv /venv
-ENV PATH="/venv/bin:$PATH"
+# Install poetry separated from system interpreter
+RUN python3 -m venv $POETRY_VENV \
+    && $POETRY_VENV/bin/pip install -U pip setuptools \
+    && $POETRY_VENV/bin/pip install poetry==${POETRY_VERSION}
 
-# Install the dependencies from the .toml file
-COPY pyproject.toml poetry.lock /app/
-RUN poetry install --no-dev
+# Add `poetry` to PATH
+ENV PATH="${PATH}:${POETRY_VENV}/bin"
 
-# Copy the application code to the container
+# copy your repository files into the container
 COPY . /app
+
 WORKDIR /app
 
-# Run the application
-CMD ["python", "-m", "paperview"]
+# Install dependencies
+RUN poetry install
