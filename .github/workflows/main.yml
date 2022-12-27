@@ -50,7 +50,7 @@ jobs:
       # install ImageMagick and update permissions
       - name: Setup ImageMagick
         run: |
-          sudo apt install libmagickwand-devsudo apt-get install -y imagemagick-6.q16
+          sudo apt-get install -y imagemagick-6.q16
           sudo sed -i '/domain="coder"/ s/rights="none"/rights="read|write"/' /etc/ImageMagick-6/policy.xml
 
       # Cache your dependencies (i.e. all the stuff in your `pyproject.toml`). Note the cache
