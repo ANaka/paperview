@@ -89,6 +89,11 @@ def extract_all(
             _words = page.extract_words()
             for word in _words:
                 word['page_number'] = page.page_number
+                word['page_height'] = page.height
+                # add absolute coordinates for top and bottom from start of doc
+                word['top_abs'] = word['top'] + page.height * (page.page_number - 1)
+                word['bottom_abs'] = word['bottom'] + page.height * (page.page_number - 1)
+
             words += _words
 
         if extract_tables:
@@ -100,6 +105,7 @@ def extract_all(
 
     if extract_words:
         words = pd.DataFrame(words)
+        words = identify_line_numbers(words)
         lines = word_df_to_line_df(words)
 
     if extract_words and extract_images:
@@ -210,6 +216,24 @@ def splice_images(image_list: List) -> List:
     return new_image_list
 
 
+def identify_line_numbers(word_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    > We're looking for words that are all digits, less than 4 characters, and located near the margin
+
+    Args:
+      word_df (pd.DataFrame): the dataframe of words
+
+    Returns:
+      A dataframe with a new column called 'is_line_number'
+    """
+
+    # looking for words that are all digits, less than 4 characters, and located near the margin
+    word_df['is_line_number'] = (
+        (word_df['text'].str.isdigit()) & (word_df['text'].str.len() < 4) & (word_df['x0'] < 50)
+    )
+    return word_df
+
+
 def word_df_to_line_df(word_df: pd.DataFrame) -> pd.DataFrame:
     """Convert a dataframe of words to a dataframe of lines.
 
@@ -237,17 +261,56 @@ def word_df_to_line_df(word_df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         a pandas dataframe containing the line data
     """
+
     line_df = (
-        word_df.groupby(['page_number', 'top', 'bottom'], group_keys=True)
+        word_df[~word_df['is_line_number']]
+        .groupby(['top_abs', 'bottom_abs'], group_keys=True)
         .apply(lambda x: x.sort_values('x0'))
         .reset_index(drop=True)
-        .groupby(['page_number', 'top', 'bottom'], group_keys=True)
+        .groupby(['top_abs', 'bottom_abs'], group_keys=True)
         .apply(lambda x: ' '.join(x['text']))
         .rename('text')
         .reset_index()
         .reset_index()
         .rename(columns={'index': 'line_number'})
+        .merge(
+            word_df[
+                [
+                    'top_abs',
+                    'bottom_abs',
+                    'top',
+                    'bottom',
+                    'upright',
+                    'direction',
+                    'page_height',
+                    'doctop',
+                    'page_number',
+                ]
+            ],
+            on=['top_abs', 'bottom_abs'],
+            how='left',
+        )
+        .drop_duplicates()
+        .reset_index(drop=True)
     )
+
+    # add number of words in each line
+    line_df['num_words'] = line_df['text'].str.split().str.len()
+
+    # add line number on a per-page basis
+    line_df['line_number_by_page'] = (
+        line_df.groupby('page_number')['line_number'].rank(method='first').astype(int)
+    )
+
+    # add distance to next line
+    line_df['dist_to_next_line'] = (line_df['top_abs'].shift(-1) - line_df['bottom_abs']).round(2)
+
+    # identify lines containing biorxiv watermark - these are usually the first 3 lines and are at the very top of a page
+    # the first watermark line usually starts with "bioRxiv preprint doi:""
+    line_df['is_biorxiv_watermark_line'] = (line_df['line_number_by_page'] < 4) & (
+        line_df['top'] < 50
+    )
+
     return line_df
 
 
