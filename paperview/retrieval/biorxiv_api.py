@@ -270,6 +270,15 @@ Article(
         article_detail = get_content_detail_for_page(url)
         return cls(article_detail, **kwargs)
 
+    def retrieve_jats_xml(self) -> str:
+        """
+        It takes an Article object and returns the JATS XML for the article
+
+        Returns:
+          A string of JATS XML
+        """
+        return requests.get(self.article_detail.jats_url).text
+
     def display_html(self):
         display(HTML(self.html))
 
