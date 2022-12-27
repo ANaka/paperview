@@ -4,7 +4,6 @@ from fastapi.responses import HTMLResponse
 
 from paperview.modal_image import image
 from paperview.retrieval.biorxiv_api import (
-    Article,
     ArticleDetail,
     get_content_detail_by_doi,
     get_content_detail_for_page,
@@ -37,17 +36,6 @@ async def get_content_detail(doi: str = None, page: str = None):
         return get_content_detail_by_doi(doi)
     else:
         return get_content_detail_for_page(page)
-
-
-# @web_app.get("/overview/", response_class=HTMLResponse)
-# async def get_overview(doi: str = None, page: str = None):
-#     if doi:
-#         article = Article.from_doi(doi)
-#     else:
-#         article = Article.from_content_page_url(page)
-
-#     overview = article.get_overview(save_images_to_tempfiles=False)
-#     return overview.html
 
 
 @web_app.get("/parse/")
