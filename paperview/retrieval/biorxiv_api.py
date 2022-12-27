@@ -1,5 +1,9 @@
 import datetime
+import os
 import re
+import tempfile
+import time
+import webbrowser
 from typing import Dict, List
 
 import requests
@@ -268,3 +272,110 @@ Article(
 
     def display_html(self):
         display(HTML(self.html))
+
+    def display_overview(self):
+        """
+        It takes an Article object, extracts the images and metadata from it, generates an HTML file
+        that displays the images and metadata, and opens the HTML file in a web browser
+        """
+
+        def generate_metadata_html(detail: ArticleDetail) -> str:
+            """
+            It takes an ArticleDetail object and returns a string of HTML
+
+            Args:
+              detail (ArticleDetail): ArticleDetail
+
+            Returns:
+              A string of HTML code.
+            """
+            metadata = f"""
+            <h1>{detail.title}</h1>
+            <p>Authors: {"; ".join(detail.authors)}</p>
+            <p>Date: {detail.date}</p>
+            <p>Category: {detail.category}</p>
+            <p>DOI: <a href="https://doi.org/{detail.doi}">{detail.doi}</a></p>
+            <p>Corresponding author: {detail.author_corresponding}</p>
+            <p>Corresponding author institution: {detail.author_corresponding_institution}</p>
+            <p>Version: {detail.version}</p>
+            <p>Type: {detail.type}</p>
+            <p>License: {detail.license}</p>
+            <p>Abstract: {detail.abstract}</p>
+            <p>PDF URL: <a href="{detail.pdf_url}">{detail.pdf_url}</a></p>
+            <p>JATS XML: <a href="{detail.jatsxml}">{detail.jatsxml}</a></p>
+            <hr>
+            """
+            return metadata
+
+        def generate_image_html(image: Dict, temp_file_name: str):
+            """
+            It takes an image dictionary and a temporary file name, and returns an HTML string that
+            displays the image and its caption
+
+            Args:
+              image (Dict): Dict
+              temp_file_name (str): The name of the temporary file that will be created to store the
+            image.
+
+            Returns:
+              A function that takes two arguments, image and temp_file_name, and returns a string of
+            html.
+            """
+            image_number = image['image_number']
+            caption = image.get('caption', '')
+            html = f"""
+            <table>
+                <tr>
+                    <td>
+                        <img src="{temp_file_name}" width="{image["image"].width}" height="{image["image"].height}" style="max-width: 75%; height: auto;"/><br>
+                        <p>Figure {image_number}</p>
+                    </td>
+                    <td>
+                        <p>{caption}</p>
+                    </td>
+                </tr>
+            </table>
+            """
+            return html
+
+        # Extract the list of image dictionaries from the 'data' attribute of the 'Article' instance
+        images = self.data['images']
+        detail = self.article_detail
+
+        # Generate the HTML that will display the images
+        html = '<html><body>'
+        html += generate_metadata_html(detail)
+
+        temp_files = []
+        for image in images:
+            # Save the image to a temporary file
+            with tempfile.NamedTemporaryFile(mode='wb', suffix='.jpg', delete=False) as f:
+                image['image'].save(f, format='JPEG')
+                # Flush the file to ensure that it is written to disk
+                f.flush()
+                # Use the temporary file's name as the 'src' attribute of an '<img>' element
+                temp_files.append(f.name)
+                html += generate_image_html(image=image, temp_file_name=f.name)
+        html += """
+            </body>
+        </html>
+        """
+
+        # Create a temporary file to hold the HTML
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.html') as f:
+            # Write the HTML to the temporary file
+            f.write(html)
+            # Flush the file to ensure that it is written to disk
+            f.flush()
+
+            webbrowser.open(f.name)
+
+            # wait one second
+            time.sleep(1)
+
+        # wait one second
+        time.sleep(1)
+
+        # delete the temporary files
+        for f in temp_files:
+            os.remove(f)
