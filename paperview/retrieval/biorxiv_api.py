@@ -7,7 +7,6 @@ import webbrowser
 from typing import Dict, List
 
 import requests
-from attrs import define, field
 from bs4 import BeautifulSoup
 from IPython.core.display import HTML
 from IPython.display import display
@@ -18,14 +17,13 @@ from paperview.retrieval import pdf_extraction
 BASE_URL = "https://api.biorxiv.org"
 
 
-@define
-class Message:
-    status: str = field()
-    interval: str = field(default=None)
-    cursor: str = field(default=None)
-    count: int = field(default=None)
-    count_new_papers: int = field(default=None)
-    total: int = field(default=None)
+class Message(BaseModel):
+    status: str
+    interval: str = None
+    cursor: str = None
+    count: int = None
+    count_new_papers: int = None
+    total: int = None
 
     def __repr__(self):
         return (
