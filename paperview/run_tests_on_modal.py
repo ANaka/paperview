@@ -1,9 +1,7 @@
 import modal
 import pytest
 
-from paperview import repo_root
 from paperview.modal_image import image
-from paperview.retrieval.biorxiv_api import Article
 
 stub = modal.Stub("run_paperview_tests")
 
