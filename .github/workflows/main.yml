@@ -53,6 +53,8 @@ jobs:
           sudo apt-get install -y imagemagick-6.q16
           sudo sed -i 's|<policymap>|<policymap>\n  <policymap>\n    <policy domain="resource" name="memory" value="6GiB"/>\n    <policy domain="resource" name="map" value="6GiB"/>\n    <policy domain="resource" name="area" value="6GiB"/>\n    <policy domain="resource" name="disk" value="6GiB"/>\n    <policy domain="resource" name="file" value="1024"/>\n    <policy domain="delegate" rights="none" pattern="gs" />\n  <\/policymap>|' /etc/ImageMagick-6/policy.xml
           sudo sed -i '/domain="coder"/ s/rights="none"/rights="read|write"/' /etc/ImageMagick-6/policy.xml
+          sudo sed -i '/<\/policymap>/i \    <policy domain="module" rights="read|write" pattern="{PS,PDF,XPS}" />' /etc/ImageMagick-6/policy.xml
+
 
       # Cache your dependencies (i.e. all the stuff in your `pyproject.toml`). Note the cache
       # key: if you're using multiple Python versions, or multiple OSes, you'd need to include
