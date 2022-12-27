@@ -1,6 +1,4 @@
 import modal
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
 
 from paperview.modal_image import image
 from paperview.retrieval.biorxiv_api import Article
