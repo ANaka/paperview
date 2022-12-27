@@ -79,8 +79,8 @@ ArticleDetail(
     @classmethod
     def from_response(cls, response):
         data = response.json()["collection"]
-        assert len(data) == 1, f"Expected 1 item in response['collection'], got {len(data)}"
-        (data,) = data
+        # assert len(data) == 1, f"Expected 1 item in response['collection'], got {len(data)}"
+        data = data[0]
         return cls.from_collection_dict(data)
 
     @classmethod
