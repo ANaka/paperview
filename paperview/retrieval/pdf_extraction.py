@@ -38,6 +38,7 @@ def extract_all(
     extract_text: bool = True,
     extract_words: bool = True,
     extract_tables: bool = True,
+    resolution: int = 300,
 ) -> Dict:
     """
     Extract data from a PDF file and return a dictionary with the extracted data.
@@ -79,7 +80,7 @@ def extract_all(
         if extract_images:
             for image in page.images:
                 image_bbox = (image['x0'], image['top'], image['x1'], image['bottom'])
-                image['image'] = page.crop(image_bbox).to_image(resolution=300).annotated
+                image['image'] = page.crop(image_bbox).to_image(resolution=resolution).annotated
                 images.append(image)
 
         if extract_text:
