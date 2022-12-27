@@ -51,7 +51,7 @@ jobs:
       - name: Setup ImageMagick
         run: |
           sudo apt-get install -y imagemagick-6.q16
-          sudo sed -i 's|<policymap>|<policymap>\n  <policymap>\n    <policy domain="module" rights="read|write" pattern="{PS,PDF,XPS}" />\n    <policy domain="path" rights="none" pattern="@*"/>\n    <policy domain="path" rights="read|write" pattern="@*"/>\n    <policy domain="resource" name="memory" value="6GiB"/>\n    <policy domain="resource" name="map" value="6GiB"/>\n    <policy domain="resource" name="area" value="6GiB"/>\n    <policy domain="resource" name="disk" value="6GiB"/>\n    <policy domain="resource" name="file" value="1024"/>\n    <policy domain="delegate" rights="read|write" pattern="gs" />\n    <policy domain="coder" rights="read|write" />\n  </policymap>|' /etc/ImageMagick-6/policy.xml
+          sudo sed -i 's|<policymap>|<policymap>\n  <policymap>\n    <policy domain="module" rights="read\|write" pattern="{PS,PDF,XPS}" />\n    <policy domain="path" rights="read\|write" pattern="@*"/>\n    <policy domain="resource" name="memory" value="6GiB"/>\n    <policy domain="resource" name="map" value="6GiB"/>\n    <policy domain="resource" name="area" value="6GiB"/>\n    <policy domain="resource" name="disk" value="6GiB"/>\n    <policy domain="resource" name="file" value="1024"/>\n    <policy domain="delegate" rights="read\|write" pattern="gs" />\n    <policy domain="coder" rights="read\|write" />\n  </policymap>|' /etc/ImageMagick-6/policy.xml
 
 
 
