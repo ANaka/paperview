@@ -11,6 +11,7 @@ from attrs import define, field
 from bs4 import BeautifulSoup
 from IPython.core.display import HTML
 from IPython.display import display
+from pydantic import BaseModel, Field
 
 from paperview.retrieval import pdf_extraction
 
@@ -39,22 +40,21 @@ def split_authors(authors: str) -> list:
     return authors.split("; ")
 
 
-@define
-class ArticleDetail:
-    title: str = field()
-    authors: list = field(converter=split_authors)
-    date: str = field()
-    category: str = field()
-    doi: str = field()
-    author_corresponding: str = field()
-    author_corresponding_institution: str = field()
-    version: str = field()
-    type: str = field()
-    license: str = field()
-    abstract: str = field()
-    published: str = field()
-    server: str = field()
-    jatsxml: str = field()
+class ArticleDetail(BaseModel):
+    title: str
+    authors: list = Field(converter=split_authors)
+    date: str
+    category: str
+    doi: str
+    author_corresponding: str
+    author_corresponding_institution: str
+    version: str
+    type: str
+    license: str
+    abstract: str
+    published: str
+    server: str
+    jatsxml: str
 
     def __repr__(self):
         return f"""
@@ -78,6 +78,18 @@ ArticleDetail(
     def pdf_url(self):
         return f'https://www.biorxiv.org/content/{self.doi}v{self.version}.full.pdf'
 
+    @classmethod
+    def from_response(cls, response):
+        data = response.json()["collection"]
+        assert len(data) == 1, f"Expected 1 item in response['collection'], got {len(data)}"
+        (data,) = data
+        return cls.from_collection_dict(data)
+
+    @classmethod
+    def from_collection_dict(cls, collection_dict):
+        collection_dict['authors'] = collection_dict['authors'].split('; ')
+        return cls(**collection_dict)
+
 
 def _query_content_detail_by_doi(
     doi: str,
@@ -97,7 +109,7 @@ def get_content_detail_by_doi(
     format: str = "JSON",  # JSON or XML
 ) -> ArticleDetail:
     response = _query_content_detail_by_doi(doi, server, format)
-    return ArticleDetail(**response.json()["collection"][0])
+    return ArticleDetail.from_response(response)
 
 
 def validate_interval(interval: str) -> bool:
