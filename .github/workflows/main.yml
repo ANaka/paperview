@@ -47,6 +47,14 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
 
+      # install ImageMagick and update permissions
+      - name: Setup ImageMagick
+        run: |
+          sudo apt-get install -y imagemagick-6.q16
+          sudo sed -i 's|<policymap>|<policymap>\n  <policymap>\n    <policy domain="PDF" rights="read\|write" />    <policy domain="module" rights="read\|write" pattern="{PS,PDF,XPS}" />\n    <policy domain="path" rights="read\|write" pattern="@*"/>\n    <policy domain="resource" name="memory" value="6GiB"/>\n    <policy domain="resource" name="map" value="6GiB"/>\n    <policy domain="resource" name="area" value="6GiB"/>\n    <policy domain="resource" name="disk" value="6GiB"/>\n    <policy domain="resource" name="file" value="1024"/>\n    <policy domain="delegate" rights="read\|write" pattern="gs" />\n    <policy domain="coder" rights="read\|write" />\n  </policymap>|' /etc/ImageMagick-6/policy.xml
+
+
+
       # Cache your dependencies (i.e. all the stuff in your `pyproject.toml`). Note the cache
       # key: if you're using multiple Python versions, or multiple OSes, you'd need to include
       # them in the cache key. I'm not, so it can be simple and just depend on the poetry.lock.
@@ -69,10 +77,9 @@ jobs:
       # they'll be installed and working.
       - run: poetry install --no-interaction
 
-      # update ImageMagick permissions
-      - run: sudo sed -i '/domain="coder"/ s/rights="none"/rights="read|write"/' /etc/ImageMagick-6/policy.xml
+
 
 
       # And finally run tests. I'm using pytest and all my pytest config is in my `pyproject.toml`
       # so this line is super-simple. But it could be as complex as you need.
-      - run: poetry run pytest
+      - run: poetry run pytest --cache-clear --cov=paperview tests/ > pytest-coverage.txt

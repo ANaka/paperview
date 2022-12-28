@@ -1,30 +1,32 @@
+import base64
 import datetime
 import os
 import re
 import tempfile
 import time
+import urllib
 import webbrowser
+from io import BytesIO
 from typing import Dict, List
 
 import requests
-from attrs import define, field
 from bs4 import BeautifulSoup
 from IPython.core.display import HTML
 from IPython.display import display
+from pydantic import BaseModel, Field
 
 from paperview.retrieval import pdf_extraction
 
 BASE_URL = "https://api.biorxiv.org"
 
 
-@define
-class Message:
-    status: str = field()
-    interval: str = field(default=None)
-    cursor: str = field(default=None)
-    count: int = field(default=None)
-    count_new_papers: int = field(default=None)
-    total: int = field(default=None)
+class Message(BaseModel):
+    status: str
+    interval: str = None
+    cursor: str = None
+    count: int = None
+    count_new_papers: int = None
+    total: int = None
 
     def __repr__(self):
         return (
@@ -39,22 +41,21 @@ def split_authors(authors: str) -> list:
     return authors.split("; ")
 
 
-@define
-class ArticleDetail:
-    title: str = field()
-    authors: list = field(converter=split_authors)
-    date: str = field()
-    category: str = field()
-    doi: str = field()
-    author_corresponding: str = field()
-    author_corresponding_institution: str = field()
-    version: str = field()
-    type: str = field()
-    license: str = field()
-    abstract: str = field()
-    published: str = field()
-    server: str = field()
-    jatsxml: str = field()
+class ArticleDetail(BaseModel):
+    title: str
+    authors: list = Field(converter=split_authors)
+    date: str
+    category: str
+    doi: str
+    author_corresponding: str
+    author_corresponding_institution: str
+    version: str
+    type: str
+    license: str
+    abstract: str
+    published: str
+    server: str
+    jatsxml: str
 
     def __repr__(self):
         return f"""
@@ -78,6 +79,18 @@ ArticleDetail(
     def pdf_url(self):
         return f'https://www.biorxiv.org/content/{self.doi}v{self.version}.full.pdf'
 
+    @classmethod
+    def from_response(cls, response):
+        data = response.json()["collection"]
+        # assert len(data) == 1, f"Expected 1 item in response['collection'], got {len(data)}"
+        data = data[0]
+        return cls.from_collection_dict(data)
+
+    @classmethod
+    def from_collection_dict(cls, collection_dict):
+        collection_dict['authors'] = collection_dict['authors'].split('; ')
+        return cls(**collection_dict)
+
 
 def _query_content_detail_by_doi(
     doi: str,
@@ -97,7 +110,7 @@ def get_content_detail_by_doi(
     format: str = "JSON",  # JSON or XML
 ) -> ArticleDetail:
     response = _query_content_detail_by_doi(doi, server, format)
-    return ArticleDetail(**response.json()["collection"][0])
+    return ArticleDetail.from_response(response)
 
 
 def validate_interval(interval: str) -> bool:
@@ -170,7 +183,9 @@ def query_content_detail_by_interval(
 
     # Parse the collections output
     collections = response.json()["collection"]
-    parsed_collections = [ArticleDetail(**collection) for collection in collections]
+    parsed_collections = [
+        ArticleDetail.from_collection_dict(collection) for collection in collections
+    ]
 
     # Return the parsed messages and collections
     return {"messages": parsed_messages, "collections": parsed_collections}
@@ -282,109 +297,178 @@ Article(
     def display_html(self):
         display(HTML(self.html))
 
-    def display_overview(self):
+    def get_overview(self, **kwargs):
         """
         It takes an Article object, extracts the images and metadata from it, generates an HTML file
         that displays the images and metadata, and opens the HTML file in a web browser
         """
 
-        def generate_metadata_html(detail: ArticleDetail) -> str:
-            """
-            It takes an ArticleDetail object and returns a string of HTML
+        return OverviewHtml.from_article(self, **kwargs)
 
-            Args:
-              detail (ArticleDetail): ArticleDetail
 
-            Returns:
-              A string of HTML code.
-            """
-            metadata = f"""
-            <h1>{detail.title}</h1>
-            <p>Authors: {"; ".join(detail.authors)}</p>
-            <p>Date: {detail.date}</p>
-            <p>Category: {detail.category}</p>
-            <p>DOI: <a href="https://doi.org/{detail.doi}">{detail.doi}</a></p>
-            <p>Corresponding author: {detail.author_corresponding}</p>
-            <p>Corresponding author institution: {detail.author_corresponding_institution}</p>
-            <p>Version: {detail.version}</p>
-            <p>Type: {detail.type}</p>
-            <p>License: {detail.license}</p>
-            <p>Abstract: {detail.abstract}</p>
-            <p>PDF URL: <a href="{detail.pdf_url}">{detail.pdf_url}</a></p>
-            <p>JATS XML: <a href="{detail.jatsxml}">{detail.jatsxml}</a></p>
-            <hr>
-            """
-            return metadata
-
-        def generate_image_html(image: Dict, temp_file_name: str):
-            """
-            It takes an image dictionary and a temporary file name, and returns an HTML string that
-            displays the image and its caption
-
-            Args:
-              image (Dict): Dict
-              temp_file_name (str): The name of the temporary file that will be created to store the
-            image.
-
-            Returns:
-              A function that takes two arguments, image and temp_file_name, and returns a string of
-            html.
-            """
-            image_number = image['image_number']
-            caption = image.get('caption', '')
-            html = f"""
-            <table>
-                <tr>
-                    <td>
-                        <img src="{temp_file_name}" width="{image["image"].width}" height="{image["image"].height}" style="max-width: 75%; height: auto;"/><br>
-                        <p>Figure {image_number}</p>
-                    </td>
-                    <td>
-                        <p>{caption}</p>
-                    </td>
-                </tr>
-            </table>
-            """
-            return html
-
-        # Extract the list of image dictionaries from the 'data' attribute of the 'Article' instance
-        images = self.data['images']
-        detail = self.article_detail
+class OverviewHtml:
+    def __init__(
+        self, images: list, article_detail: ArticleDetail, save_images_to_tempfiles: bool = True
+    ):
+        self.images = images
+        self.article_detail = article_detail
+        self.save_images_to_tempfiles = save_images_to_tempfiles
 
         # Generate the HTML that will display the images
         html = '<html><body>'
-        html += generate_metadata_html(detail)
+        html += generate_metadata_html(article_detail)
 
         temp_files = []
         for image in images:
-            # Save the image to a temporary file
-            with tempfile.NamedTemporaryFile(mode='wb', suffix='.jpg', delete=False) as f:
-                image['image'].save(f, format='JPEG')
-                # Flush the file to ensure that it is written to disk
-                f.flush()
-                # Use the temporary file's name as the 'src' attribute of an '<img>' element
-                temp_files.append(f.name)
-                html += generate_image_html(image=image, temp_file_name=f.name)
+            output = generate_image_html(image, save_images_to_tempfiles=save_images_to_tempfiles)
+            temp_file_name = output.get('temp_file_name')
+            if temp_file_name:
+                temp_files.append(temp_file_name)
+            html += output.get('html')
         html += """
             </body>
         </html>
         """
+        self.html = html
+        self.temp_files = temp_files
 
+    @classmethod
+    def from_article(cls, article: Article, **kwargs):
+        return cls(article.data['images'], article.article_detail, **kwargs)
+
+    def display(self, cleanup: bool = True):
         # Create a temporary file to hold the HTML
         with tempfile.NamedTemporaryFile(mode='w', suffix='.html') as f:
             # Write the HTML to the temporary file
-            f.write(html)
+            f.write(self.html)
             # Flush the file to ensure that it is written to disk
             f.flush()
 
             webbrowser.open(f.name)
 
+        if cleanup:
             # wait one second
             time.sleep(1)
 
-        # wait one second
-        time.sleep(1)
+            # delete the temporary files
+            for f in self.temp_files:
+                os.remove(f)
 
-        # delete the temporary files
-        for f in temp_files:
-            os.remove(f)
+
+def get_overview_html(
+    images: list, article_detail: ArticleDetail, save_images_to_tempfiles: bool = True
+):
+
+    # Generate the HTML that will display the images
+    html = '<html><body>'
+    html += generate_metadata_html(article_detail)
+
+    temp_files = []
+    for image in images:
+        output = generate_image_html(image, save_images_to_tempfiles=save_images_to_tempfiles)
+        temp_file_name = output.get('temp_file_name')
+        if temp_file_name:
+            temp_files.append(temp_file_name)
+        html += output.get('html')
+    html += """
+        </body>
+    </html>
+    """
+    return html, temp_files
+
+
+def generate_metadata_html(detail: ArticleDetail) -> str:
+    """
+    It takes an ArticleDetail object and returns a string of HTML
+
+    Args:
+        detail (ArticleDetail): ArticleDetail
+
+    Returns:
+        A string of HTML code.
+    """
+    metadata = f"""
+    <h1>{detail.title}</h1>
+    <p>Authors: {"; ".join(detail.authors)}</p>
+    <p>Date: {detail.date}</p>
+    <p>Category: {detail.category}</p>
+    <p>DOI: <a href="https://doi.org/{detail.doi}">{detail.doi}</a></p>
+    <p>Corresponding author: {detail.author_corresponding}</p>
+    <p>Corresponding author institution: {detail.author_corresponding_institution}</p>
+    <p>Version: {detail.version}</p>
+    <p>Type: {detail.type}</p>
+    <p>License: {detail.license}</p>
+    <p>Abstract: {detail.abstract}</p>
+    <p>PDF URL: <a href="{detail.pdf_url}">{detail.pdf_url}</a></p>
+    <p>JATS XML: <a href="{detail.jatsxml}">{detail.jatsxml}</a></p>
+    <hr>
+    """
+    return metadata
+
+
+def image_html_template(
+    width,
+    height,
+    bytes_str: str = None,
+    temp_file_name: str = None,
+    caption: str = None,
+    image_number: int = None,
+) -> str:
+    if bytes_str:
+        src = f'data:image/jpeg;base64,{urllib.parse.quote(bytes_str)}'
+    else:
+        src = temp_file_name
+    return f"""
+    <table>
+        <tr>
+            <td>
+                <p><font size="+2">Image {image_number}</font></p>
+                <img src="{src}" width="{width}" height="{height}" style="max-width: 75%; height: auto;"/><br>
+            </td>
+            <td>
+                <p>{caption}</p>
+            </td>
+        </tr>
+    </table>
+    """
+
+
+def generate_image_html(image: Dict, save_images_to_tempfiles: bool) -> dict:
+    """
+    It takes an image dictionary and a boolean indicating whether to save the image to a file, and
+    returns a dictionary containing the HTML string and the file name of the temporary file where
+    the image is saved.
+
+    Args:
+        image (Dict): Dict
+        save_images_to_tempfiles (bool): A boolean indicating whether to save the image to a file.
+
+    Returns:
+        A dictionary containing the HTML string and the file name of the temporary file.
+    """
+    # If the 'save_images' parameter is True, save the image to a temporary file
+    width = image['image'].width
+    height = image['image'].height
+    caption = image.get('caption', '')
+    image_number = image['image_number']
+    if save_images_to_tempfiles:
+        with tempfile.NamedTemporaryFile(mode='wb', suffix='.jpg', delete=False) as f:
+            image['image'].save(f, format='JPEG')
+            # Flush the file to ensure that it is written to disk
+            f.flush()
+            # Use the temporary file's name as the 'src' attribute of an '<img>' element
+            temp_file_name = f.name
+        html = image_html_template(
+            width, height, temp_file_name=temp_file_name, caption=caption, image_number=image_number
+        )
+    else:
+        # Encode the image as a base64 string
+        buffered = BytesIO()
+        image['image'].save(buffered, format="JPEG")
+        bytes_str = base64.b64encode(buffered.getvalue())
+        temp_file_name = None
+        html = image_html_template(
+            width, height, bytes_str=bytes_str, caption=caption, image_number=image_number
+        )
+
+    return {'html': html, 'temp_file_name': temp_file_name}
