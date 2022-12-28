@@ -77,9 +77,9 @@ jobs:
       # they'll be installed and working.
       - run: poetry install --no-interaction
 
-      
+
 
 
       # And finally run tests. I'm using pytest and all my pytest config is in my `pyproject.toml`
       # so this line is super-simple. But it could be as complex as you need.
-      - run: poetry run pytest
+      - run: poetry run pytest --cache-clear --cov=paperview tests/ > pytest-coverage.txt
