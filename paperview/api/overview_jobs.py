@@ -1,6 +1,4 @@
 import modal
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
 
 from paperview.modal_image import image
 from paperview.retrieval.biorxiv_api import Article
@@ -8,7 +6,7 @@ from paperview.retrieval.biorxiv_api import Article
 stub = modal.Stub("paperview_overview_jobs")
 
 
-@stub.function(image=image, retries=3, timeout=120)
+@stub.function(image=image, retries=3, timeout=3000)
 def get_overview(doi: str = None, page: str = None):
     if doi:
         article = Article.from_doi(doi)

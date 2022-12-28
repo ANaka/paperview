@@ -183,7 +183,9 @@ def query_content_detail_by_interval(
 
     # Parse the collections output
     collections = response.json()["collection"]
-    parsed_collections = [ArticleDetail(**collection) for collection in collections]
+    parsed_collections = [
+        ArticleDetail.from_collection_dict(collection) for collection in collections
+    ]
 
     # Return the parsed messages and collections
     return {"messages": parsed_messages, "collections": parsed_collections}

@@ -2,6 +2,8 @@ import modal
 
 from paperview import repo_root
 
+stub = modal.Stub("paperview_image")
+
 mount = modal.Mount(local_dir=repo_root, remote_dir="/paperview")
 image = (
     modal.Image.from_dockerhub('python:3.8-slim')
