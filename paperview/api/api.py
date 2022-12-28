@@ -67,12 +67,50 @@ async def form_start_overview(request: fastapi.Request):
         return fastapi.responses.JSONResponse(content="", status_code=400)
     # Return an HTML document with a hyperlink to the result URL
     result_url = f"/overview_result/{call.object_id}"
+
+    # I feel like this is not the right place to put this. I need to read more about websites
     html_content = f"""
     <html>
         <head>
             <title>Overview Result</title>
+            <style>
+                form {{
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                }}
+                input[type=text] {{
+                    width: 50%;
+                    padding: 12px 20px;
+                    margin: 8px 0;
+                    box-sizing: border-box;
+                    border: 2px solid #ccc;
+                    border-radius: 4px;
+                }}
+                input[type=submit] {{
+                    width: 50%;
+                    background-color: #4CAF50;
+                    color: white;
+                    padding: 14px 20px;
+                    margin: 8px 0;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                }}
+                input[type=submit]:hover {{
+                    background-color: #45a049;
+                }}
+            </style>
         </head>
         <body>
+            <form method="post">
+                <label for="doi">DOI:</label><br>
+                <input type="text" id="doi" name="doi"><br>
+                <label for="url">URL:</label><br>
+                <input type="text" id="url" name="url"><br><br>
+                <input type="submit" value="Submit">
+            </form>
+            <br>
             <a href="{result_url}">Click here to view the overview result</a>
         </body>
     </html>
