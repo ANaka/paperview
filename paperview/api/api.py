@@ -118,19 +118,6 @@ async def form_start_overview(request: fastapi.Request):
     return HTMLResponse(content=html_content, status_code=200)
 
 
-# @web_app.post("/start-overview/")
-# async def start_overview(request: OverviewInput):
-#     doi = request.doi
-#     url = request.url
-#     if doi:
-#         call = get_overview.spawn(doi=doi)
-#     elif url:
-#         call = get_overview.spawn(page=url)
-#     else:
-#         return fastapi.responses.JSONResponse(content="", status_code=400)
-#     return {"call_id": call.object_id}
-
-
 @web_app.get("/overview/")
 async def request_overview(doi: str = None, page: str = None):
     return start_overview(OverviewInput(doi=doi, url=page))
