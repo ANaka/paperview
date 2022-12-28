@@ -228,6 +228,24 @@ def query_article_by_doi(doi: str, server: str = "biorxiv", format: str = "JSON"
     return response
 
 
+def get_doi_from_page(url: str) -> str:
+    """
+    It takes a URL, finds the DOI, and then queries the API for the article details
+
+    Args:
+        url (str): The URL of the article you want to get the metadata for.
+
+    Returns:
+        A DOI
+    """
+    html = requests.get(url).text
+    soup = BeautifulSoup(html, 'html.parser')
+
+    doi_element = soup.find(class_='highwire-cite-metadata-doi highwire-cite-metadata')
+    doi_url = doi_element.get_text()
+    return doi_url.split("https://doi.org/")[-1].strip()
+
+
 def get_content_detail_for_page(url: str) -> ArticleDetail:
     """
     It takes a URL, finds the DOI, and then queries the API for the article details
@@ -238,14 +256,7 @@ def get_content_detail_for_page(url: str) -> ArticleDetail:
     Returns:
         ArticleDetail
     """
-    html = requests.get(url).text
-    soup = BeautifulSoup(html, 'html.parser')
-
-    doi_element = soup.find(class_='highwire-cite-metadata-doi highwire-cite-metadata')
-    doi_url = doi_element.get_text()
-    _doi = doi_url.split("https://doi.org/")[-1].strip()
-
-    return get_content_detail_by_doi(_doi)
+    return get_content_detail_by_doi(get_doi_from_page(url))
 
 
 class Article(object):
