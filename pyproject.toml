@@ -25,6 +25,7 @@ modal-client = "^0.44.603"
 fastapi = {extras = ["all"], version = "^0.88.0"}
 pydantic = "^1.10.2"
 websockets = "^10.4"
+pytest-cov = "^4.0.0"
 
 [tool.poetry.dev-dependencies]
 jupyter = "^1.0.0"
