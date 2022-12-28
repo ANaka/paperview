@@ -379,20 +379,50 @@ def generate_metadata_html(detail: ArticleDetail) -> str:
         A string of HTML code.
     """
     metadata = f"""
-    <h1>{detail.title}</h1>
-    <p>Authors: {"; ".join(detail.authors)}</p>
-    <p>Date: {detail.date}</p>
-    <p>Category: {detail.category}</p>
-    <p>DOI: <a href="https://doi.org/{detail.doi}">{detail.doi}</a></p>
-    <p>Corresponding author: {detail.author_corresponding}</p>
-    <p>Corresponding author institution: {detail.author_corresponding_institution}</p>
-    <p>Version: {detail.version}</p>
-    <p>Type: {detail.type}</p>
-    <p>License: {detail.license}</p>
-    <p>Abstract: {detail.abstract}</p>
-    <p>PDF URL: <a href="{detail.pdf_url}">{detail.pdf_url}</a></p>
-    <p>JATS XML: <a href="{detail.jatsxml}">{detail.jatsxml}</a></p>
-    <hr>
+    <style>
+        .metadata {{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 50%;
+            margin: 0 auto;
+        }}
+        .metadata h1 {{
+            font-size: 36px;
+            margin-bottom: 20px;
+        }}
+        .metadata p {{
+            font-size: 18px;
+            margin: 10px 0;
+        }}
+        .metadata a {{
+            text-decoration: none;
+            color: blue;
+        }}
+        .metadata hr {{
+            width: 75%;
+            border: 0;
+            height: 1px;
+            background-color: #333;
+            margin: 40px 0;
+        }}
+    </style>
+    <div class="metadata">
+        <h1>{detail.title}</h1>
+        <p>Authors: {"; ".join(detail.authors)}</p>
+        <p>Date: {detail.date}</p>
+        <p>Category: {detail.category}</p>
+        <p>DOI: <a href="https://doi.org/{detail.doi}">{detail.doi}</a></p>
+        <p>Corresponding author: {detail.author_corresponding}</p>
+        <p>Corresponding author institution: {detail.author_corresponding_institution}</p>
+        <p>Version: {detail.version}</p>
+        <p>Type: {detail.type}</p>
+        <p>License: {detail.license}</p>
+        <p>Abstract: {detail.abstract}</p>
+        <p>PDF URL: <a href="{detail.pdf_url}">{detail.pdf_url}</a></p>
+        <p>JATS XML: <a href="{detail.jatsxml}">{detail.jatsxml}</a></p>
+        <hr>
+    </div>
     """
     return metadata
 

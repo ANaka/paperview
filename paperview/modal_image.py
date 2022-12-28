@@ -15,3 +15,7 @@ image = (
     .copy(mount)
     .pip_install(["/paperview"])
 )
+
+
+if __name__ == '__main__':
+    stub.run()
