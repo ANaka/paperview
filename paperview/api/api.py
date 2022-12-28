@@ -15,7 +15,7 @@ from paperview.retrieval.biorxiv_api import (
 )
 
 web_app = fastapi.FastAPI()
-stub = modal.Stub("paperview_api")
+stub = modal.Stub("paperview_api", image=image)
 
 get_overview = modal.lookup("paperview_overview_jobs", "get_overview")
 
@@ -199,7 +199,7 @@ async def poll_results(call_id: str):
 # assets_path = Path(__file__).parent / "assets"
 
 
-@stub.asgi(image=image)
+@stub.asgi()
 def fastapi_app():
     return web_app
 
