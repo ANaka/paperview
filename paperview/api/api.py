@@ -77,9 +77,21 @@ async def root():
                 input[type=submit]:hover {{
                     background-color: #45a049;
                 }}
+                p {{
+                    text-align: center;
+                    font-family: 'Open Sans', sans-serif;
+                    font-size: 30px;
+                    color: black;
+                }}
+                label {{
+                    font-family: 'Open Sans', sans-serif;
+                    font-size: 20px;
+                    color: black;
+                }}
             </style>
         </head>
         <body>
+            <p>Enter a DOI or a URL from <a href="https://biorxiv.org">bioRxiv</a></p>
             <form method="post" action="/form-start-overview/">
                 <label for="doi">DOI:</label><br>
                 <input type="text" id="doi" name="doi"><br>
@@ -116,16 +128,39 @@ async def form_start_overview(request: fastapi.Request):
             <style>
                 .loader {{
                     border: 16px solid #f3f3f3; /* Light grey */
-                    border-top: 16px solid #3498db; /* Blue */
+                    border-top: 16px solid purple; /* Purple */
                     border-radius: 50%;
                     width: 120px;
                     height: 120px;
                     animation: spin 2s linear infinite;
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
                 }}
 
                 @keyframes spin {{
-                    0% {{ transform: rotate(0deg); }}
-                    100% {{ transform: rotate(360deg); }}
+                    0% {{
+                        transform: rotate(0deg);
+                    }}
+                    100% {{
+                        transform: rotate(360deg);
+                    }}
+                }}
+
+                @keyframes pulse {{
+                    0% {{
+                        transform: scale(1);
+                        opacity: 1;
+                    }}
+                    50% {{
+                        transform: scale(1.1);
+                        opacity: 0.5;
+                    }}
+                    100% {{
+                        transform: scale(1);
+                        opacity: 1;
+                    }}
                 }}
             </style>
         </head>
