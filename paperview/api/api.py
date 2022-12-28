@@ -19,55 +19,32 @@ stub = modal.Stub("paperview")
 get_overview = modal.lookup("paperview_overview_jobs", "get_overview")
 
 
-@web_app.get("/metadata/", response_model=ArticleDetail)
-async def get_content_detail(doi: str = None, page: str = None):
-    if doi:
-        return get_content_detail_by_doi(doi)
-    else:
-        return get_content_detail_for_page(page)
+# @web_app.get("/metadata/", response_model=ArticleDetail)
+# async def get_content_detail(doi: str = None, page: str = None):
+#     if doi:
+#         return get_content_detail_by_doi(doi)
+#     else:
+#         return get_content_detail_for_page(page)
+
+
+# class OverviewInput(BaseModel):
+#     doi: str = None
+#     url: str = None
+
+
+# @web_app.post("/start-overview/")
+# async def start_overview(overview_input: OverviewInput):
+#     doi = overview_input.doi
+#     url = overview_input.url
+#     # Call the get_overview function in the background, passing either the doi or url as an argument
+#     call = get_overview.spawn(doi=doi, page=url)
+
+#     # Return the call ID to the user
+#     return {"call_id": call.object_id}
 
 
 @web_app.get("/", response_class=HTMLResponse)
 async def root():
-    return """
-    <form action="/form-start-overview/" method="post">
-        <input type="text" name="doi" placeholder="DOI" />
-        <input type="text" name="url" placeholder="URL" />
-        <input type="submit" />
-    </form>
-    """
-
-
-class OverviewInput(BaseModel):
-    doi: str = None
-    url: str = None
-
-
-@web_app.post("/start-overview/")
-async def start_overview(overview_input: OverviewInput):
-    doi = overview_input.doi
-    url = overview_input.url
-    # Call the get_overview function in the background, passing either the doi or url as an argument
-    call = get_overview.spawn(doi=doi, page=url)
-
-    # Return the call ID to the user
-    return {"call_id": call.object_id}
-
-
-@web_app.post("/form-start-overview/", response_class=HTMLResponse)
-async def form_start_overview(request: fastapi.Request):
-    form = await request.form()
-    doi = form.get("doi")
-    url = form.get("url")
-    if doi:
-        call = get_overview.spawn(doi=doi)
-    elif url:
-        call = get_overview.spawn(page=url)
-    else:
-        return fastapi.responses.JSONResponse(content="", status_code=400)
-    # Return an HTML document with a hyperlink to the result URL
-    result_url = f"/overview_result/{call.object_id}"
-
     # I feel like this is not the right place to put this. I need to read more about websites
     html_content = f"""
     <html>
@@ -103,7 +80,7 @@ async def form_start_overview(request: fastapi.Request):
             </style>
         </head>
         <body>
-            <form method="post">
+            <form method="post" action="/form-start-overview/">
                 <label for="doi">DOI:</label><br>
                 <input type="text" id="doi" name="doi"><br>
                 <label for="url">URL:</label><br>
@@ -111,16 +88,44 @@ async def form_start_overview(request: fastapi.Request):
                 <input type="submit" value="Submit">
             </form>
             <br>
-            <a href="{result_url}">Click here to view the overview result</a>
         </body>
     </html>
     """
+    return html_content
+
+
+@web_app.post("/form-start-overview/", response_class=HTMLResponse)
+async def form_start_overview(request: fastapi.Request):
+    form = await request.form()
+    doi = form.get("doi")
+    url = form.get("url")
+    if doi:
+        call = get_overview.spawn(doi=doi)
+    elif url:
+        call = get_overview.spawn(page=url)
+    else:
+        return fastapi.responses.JSONResponse(content="", status_code=400)
+    # Return an HTML document with a hyperlink to the result URL
+    result_url = f"/overview_result/{call.object_id}"
+    html_content = f"""
+    <html>
+        <head>
+            <title>Overview Result</title>
+            <meta http-equiv="refresh" content="5; URL={result_url}" />
+        </head>
+        <body>
+            <p>Overview is being generated. May take up to a minute.</p>
+            <p> <a href="{result_url}">click here</a>.</p>
+        </body>
+    </html>
+    """
+
     return HTMLResponse(content=html_content, status_code=200)
 
 
-@web_app.get("/overview/")
-async def request_overview(doi: str = None, page: str = None):
-    return start_overview(OverviewInput(doi=doi, url=page))
+# @web_app.get("/overview/")
+# async def request_overview(doi: str = None, page: str = None):
+#     return start_overview(OverviewInput(doi=doi, url=page))
 
 
 @web_app.get("/overview_result/{call_id}", response_class=HTMLResponse)
@@ -139,7 +144,7 @@ async def poll_results(call_id: str):
 assets_path = Path(__file__).parent / "assets"
 
 
-@stub.webhook(
+@stub.asgi(
     image=image,
     # mounts=[modal.Mount(remote_dir="/assets", local_dir=assets_path)]
 )
