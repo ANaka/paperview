@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Paperview</title>
+</head>
+
+<body>
+    <h1>Get a quick look at a bioRxiv manuscript</h1>
+    <form id="form">
+        <label for="doi-input">Enter a DOI:</label><br>
+        <input type="text" id="doi-input" name="doi"><br>
+        <br>
+        <label for="url-input">Enter a URL:</label><br>
+        <input type="text" id="url-input" name="url"><br>
+        <br>
+        <button type="submit" id="start-button">Start overview</button>
+    </form>
+    <div id="overview-result"></div>
+
+    <script>
+        document.getElementById('form').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            // Get the values of the input fields
+            const doi = document.getElementById('doi-input').value;
+            const url = document.getElementById('url-input').value;
+
+            // Send a request to the server to start a get_overview call
+            fetch('/start-overview/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        doi: doi,
+                        url: url
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Start polling for the result
+                    const pollResult = setInterval(function() {
+                        // Send a request to check for the result
+                        fetch(`/overview-result/${data.call_id}`)
+                            .then(response => response.json())
+                            .then(result => {
+                                if (result.status === 'done') {
+                                    // If the result is available, display it and stop polling
+                                    document.getElementById('overview-result').innerHTML = result.html;
+                                    clearInterval(pollResult);
+                                }
+                            });
+                    }, 1000); // Poll every 1 second
+                });
+        });
+    </script>
+</body>
+
+</html>
