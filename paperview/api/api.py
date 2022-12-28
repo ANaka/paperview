@@ -5,6 +5,7 @@ import fastapi.staticfiles
 import modal
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
+from pyparsing import html_comment
 
 from paperview.modal_image import image
 from paperview.retrieval.biorxiv_api import (
@@ -14,7 +15,7 @@ from paperview.retrieval.biorxiv_api import (
 )
 
 web_app = fastapi.FastAPI()
-stub = modal.Stub("paperview")
+stub = modal.Stub("paperview_api")
 
 get_overview = modal.lookup("paperview_overview_jobs", "get_overview")
 
@@ -45,7 +46,6 @@ get_overview = modal.lookup("paperview_overview_jobs", "get_overview")
 
 @web_app.get("/", response_class=HTMLResponse)
 async def root():
-    # I feel like this is not the right place to put this. I need to read more about websites
     html_content = f"""
     <html>
         <head>
@@ -91,7 +91,7 @@ async def root():
         </body>
     </html>
     """
-    return html_content
+    return HTMLResponse(content=html_content, status_code=200)
 
 
 @web_app.post("/form-start-overview/", response_class=HTMLResponse)
@@ -105,17 +105,32 @@ async def form_start_overview(request: fastapi.Request):
         call = get_overview.spawn(page=url)
     else:
         return fastapi.responses.JSONResponse(content="", status_code=400)
-    # Return an HTML document with a hyperlink to the result URL
-    result_url = f"/overview_result/{call.object_id}"
+
+    # Redirect user to results when the job is complete
+
     html_content = f"""
     <html>
         <head>
             <title>Overview Result</title>
-            <meta http-equiv="refresh" content="5; URL={result_url}" />
+            <meta http-equiv="refresh" content="1;URL='/overview_result/{call.object_id}'" />
+            <style>
+                .loader {{
+                    border: 16px solid #f3f3f3; /* Light grey */
+                    border-top: 16px solid #3498db; /* Blue */
+                    border-radius: 50%;
+                    width: 120px;
+                    height: 120px;
+                    animation: spin 2s linear infinite;
+                }}
+
+                @keyframes spin {{
+                    0% {{ transform: rotate(0deg); }}
+                    100% {{ transform: rotate(360deg); }}
+                }}
+            </style>
         </head>
         <body>
-            <p>Overview is being generated. May take up to a minute.</p>
-            <p> <a href="{result_url}">click here</a>.</p>
+            <div class="loader"></div>
         </body>
     </html>
     """
@@ -123,9 +138,18 @@ async def form_start_overview(request: fastapi.Request):
     return HTMLResponse(content=html_content, status_code=200)
 
 
-# @web_app.get("/overview/")
-# async def request_overview(doi: str = None, page: str = None):
-#     return start_overview(OverviewInput(doi=doi, url=page))
+@web_app.get("/overview_result_status/{call_id}")
+async def overview_result_status(call_id: str):
+    from modal.functions import FunctionCall
+
+    function_call = FunctionCall.from_id(call_id)
+    try:
+        function_call.get(timeout=0)
+        status = 'completed'
+    except TimeoutError:
+        status = 'pending'
+
+    return {"status": status}
 
 
 @web_app.get("/overview_result/{call_id}", response_class=HTMLResponse)
@@ -133,23 +157,50 @@ async def poll_results(call_id: str):
     from modal.functions import FunctionCall
 
     function_call = FunctionCall.from_id(call_id)
-    try:
-        result = function_call.get()
-    except TimeoutError:
-        return fastapi.responses.JSONResponse(content="", status_code=202)
+    result = function_call.get()
+    if result is None:
+        # Return a page with a JavaScript function that periodically checks the status
+        # of the get_overview call and redirects the user to the results URL when the
+        # call is complete
+        html_content = f"""
+        <html>
+            <head>
+                <title>Overview Result</title>
+                <script>
+                    function checkStatus() {{
+                        var xhr = new XMLHttpRequest();
+                        xhr.onreadystatechange = function() {{
+                            if (this.readyState == 4 && this.status == 200) {{
+                                var response = JSON.parse(this.responseText);
+                                if (response.status == 'completed') {{
+                                    window.location.href = '/overview_result/{call_id}';
+                                }} else {{
+                                    setTimeout(checkStatus, 1000);
+                                }}
+                            }}
+                        }};
+                        xhr.open("GET", '/overview_result_status/{call_id}', true);
+                        xhr.send();
+                    }}
+                    setTimeout(checkStatus, 1000);
+                </script>
+            </head>
+            <body>
+                <p>Please wait while we retrieve the overview result...</p>
+            </body>
+        </html>
+        """
+        return HTMLResponse(content=html_content, status_code=200)
+    else:
+        # Return the overview result
+        return result
 
-    return result
+
+# assets_path = Path(__file__).parent / "assets"
 
 
-assets_path = Path(__file__).parent / "assets"
-
-
-@stub.asgi(
-    image=image,
-    # mounts=[modal.Mount(remote_dir="/assets", local_dir=assets_path)]
-)
+@stub.asgi(image=image)
 def fastapi_app():
-    # return web_app.mount("/", fastapi.staticfiles.StaticFiles(directory="/assets", html=True))
     return web_app
 
 
