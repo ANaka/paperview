@@ -106,25 +106,12 @@ async def root():
     return HTMLResponse(content=html_content, status_code=200)
 
 
-@web_app.post("/form-start-overview/", response_class=HTMLResponse)
-async def form_start_overview(request: fastapi.Request):
-    form = await request.form()
-    doi = form.get("doi")
-    url = form.get("url")
-    if doi:
-        call = get_overview.spawn(doi=doi)
-    elif url:
-        call = get_overview.spawn(page=url)
-    else:
-        return fastapi.responses.JSONResponse(content="", status_code=400)
-
-    # Redirect user to results when the job is complete
-
-    html_content = f"""
+def get_loading_screen(call_object_id):
+    return f"""
     <html>
         <head>
             <title>Overview Result</title>
-            <meta http-equiv="refresh" content="1;URL='/overview_result/{call.object_id}'" />
+            <meta http-equiv="refresh" content="1;URL='/overview_result/{call_object_id}'" />
             <style>
                 .loader {{
                     border: 16px solid #f3f3f3; /* Light grey */
@@ -169,6 +156,39 @@ async def form_start_overview(request: fastapi.Request):
         </body>
     </html>
     """
+
+
+@web_app.post("/form-start-overview/", response_class=HTMLResponse)
+async def form_start_overview(request: fastapi.Request):
+    form = await request.form()
+    doi = form.get("doi")
+    url = form.get("url")
+    if doi:
+        call = get_overview.spawn(doi=doi)
+    elif url:
+        call = get_overview.spawn(page=url)
+    else:
+        return fastapi.responses.JSONResponse(content="", status_code=400)
+
+    # Redirect user to results when the job is complete
+    html_content = get_loading_screen(call.object_id)
+
+    return HTMLResponse(content=html_content, status_code=200)
+
+
+# this is lazy, should refactor
+@web_app.get("/request-overview/", response_class=HTMLResponse)
+async def request_overview(doi: str = None, url: str = None):
+
+    if doi:
+        call = get_overview.spawn(doi=doi)
+    elif url:
+        call = get_overview.spawn(page=url)
+    else:
+        return fastapi.responses.JSONResponse(content="", status_code=400)
+
+    # Redirect user to results when the job is complete
+    html_content = get_loading_screen(call.object_id)
 
     return HTMLResponse(content=html_content, status_code=200)
 
