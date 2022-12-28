@@ -104,22 +104,22 @@ def test_query_recent_content():
     assert len(result) >= 0
 
 
-def test_create_Article_from_ArticleDetail(example_article_detail):
-    article_detail = ArticleDetail(**example_article_detail)
-    article = Article(article_detail)
-    assert article.article_detail == article_detail
+# def test_create_Article_from_ArticleDetail(example_article_detail):
+#     article_detail = ArticleDetail(**example_article_detail)
+#     article = Article(article_detail)
+#     assert article.article_detail == article_detail
 
 
-def test_create_Article_from_doi(example_article_detail):
-    article = Article.from_doi(example_article_detail["doi"])
-    assert article.article_detail.doi == example_article_detail["doi"]
+# def test_create_Article_from_doi(example_article_detail):
+#     article = Article.from_doi(example_article_detail["doi"])
+#     assert article.article_detail.doi == example_article_detail["doi"]
 
 
-def test_create_Article_from_content_page_url(
-    example_article_detail,
-    url='https://www.biorxiv.org/content/10.1101/456574v1',
-):
-    article = Article.from_content_page_url(url)
+# def test_create_Article_from_content_page_url(
+#     example_article_detail,
+#     url='https://www.biorxiv.org/content/10.1101/456574v1',
+# ):
+#     article = Article.from_content_page_url(url)
 
-    article_detail = ArticleDetail(**example_article_detail)
-    assert article.article_detail == article_detail
+#     article_detail = ArticleDetail(**example_article_detail)
+#     assert article.article_detail == article_detail
