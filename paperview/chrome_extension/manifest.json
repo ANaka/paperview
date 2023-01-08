@@ -1,0 +1,18 @@
+{
+    "manifest_version": 2,
+    "name": "BioRxiv paperview",
+    "description": "Adds a link to the https://anaka--paperview-api-fastapi-app.modal.run/request-overview/ endpoint with the current page's URL as a query parameter when the user is on a BioRxiv page",
+    "version": "1.0",
+    "permissions": ["activeTab", "*://*.www.biorxiv.org/*"],
+    "web_accessible_resources":["style.css"],
+    "content_scripts": [
+      {
+        "matches": ["*://*.www.biorxiv.org/*"],
+        "js": ["content.js"]
+      }
+    ],
+    "background": {
+        "scripts": ["background.js"]
+      },
+    "run_at": "document_idle"
+  }
