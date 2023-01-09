@@ -303,7 +303,7 @@ Article(
         Returns:
           A string of JATS XML
         """
-        return requests.get(self.article_detail.jats_url).text
+        return requests.get(self.article_detail.jatsxml).text
 
     def display_html(self):
         display(HTML(self.html))
