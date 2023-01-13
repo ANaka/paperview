@@ -1291,4 +1291,4 @@ def parse_jats_xmlstr(xmlstr: str):
     texts = pd.DataFrame(texts)
     figures = pd.DataFrame(figures)
     tables = pd.DataFrame(tables)
-    return {'texts': texts, 'figures': figures, 'tables': tables}
+    return {'xml_text': texts, 'figure_captions': figures, 'table_captions': tables, 'all_text': df}

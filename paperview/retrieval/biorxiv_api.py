@@ -15,7 +15,7 @@ from IPython.core.display import HTML
 from IPython.display import display
 from pydantic import BaseModel, Field
 
-from paperview.retrieval import pdf_extraction
+from paperview.retrieval import pdf_extraction, process_xml
 
 BASE_URL = "https://api.biorxiv.org"
 
@@ -90,6 +90,15 @@ ArticleDetail(
     def from_collection_dict(cls, collection_dict):
         collection_dict['authors'] = collection_dict['authors'].split('; ')
         return cls(**collection_dict)
+
+    def retrieve_jats_xml(self) -> str:
+        """
+        It takes an ArticleDetail object and returns the JATS XML for the article
+
+        Returns:
+          A string of JATS XML
+        """
+        return requests.get(self.jatsxml).text
 
 
 def _query_content_detail_by_doi(
@@ -263,12 +272,41 @@ class Article(object):
     def __init__(
         self,
         article_detail: ArticleDetail,
+        extract_images: bool = True,
+        extract_text_from_pdf: bool = True,
+        extract_words_from_pdf: bool = True,
+        extract_tables_from_pdf: bool = None,
+        resolution: int = 300,
         **kwargs,
     ):
         self.article_detail = article_detail
 
+        self.xml = self.article_detail.retrieve_jats_xml()
+        self.data = process_xml.parse_jats_xmlstr(self.xml)
+
+        self.full_xml_retrieved = (self.data['all_text']['title'] == 'Results').any()
+
+        # see if we need to extract tables from the PDF
+        if len(self.data.get('table_captions')) > 0:
+            extract_tables_from_pdf = (
+                True if extract_tables_from_pdf is None else extract_tables_from_pdf
+            )
+        elif len(self.data.get('table_captions')) == 0:
+            extract_tables_from_pdf = (
+                False if extract_tables_from_pdf is None else extract_tables_from_pdf
+            )
+
         with pdf_extraction.NamedTemporaryPDF(self.article_detail.pdf_url) as f:
-            self.data = pdf_extraction.extract_all(f, **kwargs)
+            _data = pdf_extraction.extract_all(
+                f,
+                extract_images=extract_images,
+                extract_text=extract_text_from_pdf,
+                extract_words=extract_words_from_pdf,
+                extract_tables=extract_tables_from_pdf,
+                resolution=resolution,
+                **kwargs,
+            )
+            self.data.update(_data)
 
     def __repr__(self):
         return f"""
@@ -295,15 +333,6 @@ Article(
     def from_content_page_url(cls, url: str, **kwargs):
         article_detail = get_content_detail_for_page(url)
         return cls(article_detail, **kwargs)
-
-    def retrieve_jats_xml(self) -> str:
-        """
-        It takes an Article object and returns the JATS XML for the article
-
-        Returns:
-          A string of JATS XML
-        """
-        return requests.get(self.article_detail.jatsxml).text
 
     def display_html(self):
         display(HTML(self.html))
