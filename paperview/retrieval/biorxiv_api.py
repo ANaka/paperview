@@ -100,6 +100,13 @@ ArticleDetail(
         """
         return requests.get(self.jatsxml).text
 
+    @property
+    def base_xml_url(self):
+        return self.jatsxml.split('.source.xml')[0]
+
+    def get_image_url(self, slug: str):
+        return f'{self.base_xml_url}/{slug}.large.jpg'
+
 
 def _query_content_detail_by_doi(
     doi: str,

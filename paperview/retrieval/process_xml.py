@@ -1249,6 +1249,18 @@ if __name__ == '__main__':
     main()
 
 
+def get_fig_slug(label: str, root):
+    try:
+        element = root.xpath(f"//*[local-name()='label' and text()='{label}']/..")[0]
+        #  search children for hwp:sub-type = slug and get text
+        for child in element.getchildren():
+            if 'slug' in child.attrib.values():
+                slug = child.text
+        return slug
+    except IndexError:
+        return None
+
+
 def parse_jats_xmlstr(xmlstr: str):
     text = xmlstr_to_dict(xmlstr)
     df = pd.DataFrame(text['body_sections'])
@@ -1291,4 +1303,8 @@ def parse_jats_xmlstr(xmlstr: str):
     texts = pd.DataFrame(texts)
     figures = pd.DataFrame(figures)
     tables = pd.DataFrame(tables)
+
+    root = etree.fromstring(xmlstr)
+    figures['slug'] = figures.label.apply(lambda x: get_fig_slug(x, root))
+
     return {'xml_text': texts, 'figure_captions': figures, 'table_captions': tables, 'all_text': df}
