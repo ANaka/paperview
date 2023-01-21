@@ -1261,7 +1261,7 @@ def get_fig_slug(label: str, root):
         return None
 
 
-def parse_jats_xmlstr(xmlstr: str):
+def extract_all(xmlstr: str):
     text = xmlstr_to_dict(xmlstr)
     df = pd.DataFrame(text['body_sections'])
     sections = df.query('level == 2').set_index('title')['id'].to_dict()

@@ -289,7 +289,7 @@ class Article(object):
         self.article_detail = article_detail
 
         self.xml = self.article_detail.retrieve_jats_xml()
-        self.data = process_xml.parse_jats_xmlstr(self.xml)
+        self.data = process_xml.extract_all(self.xml)
 
         self.full_xml_retrieved = (self.data['all_text']['title'] == 'Results').any()
 
