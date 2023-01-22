@@ -1,0 +1,24 @@
+{
+    "title": "Complementary subnetworks of cortical somatostatin interneurons",
+    "authors": [
+        "Naka, A.",
+        "Shababo, B.",
+        "Snyder, B.",
+        "Egladyous, A.",
+        "Sridharan, S.",
+        "Paninski, L.",
+        "Adesnik, H."
+    ],
+    "date": "2018-10-30",
+    "category": "neuroscience",
+    "doi": "10.1101/456574",
+    "author_corresponding": "Hillel  Adesnik",
+    "author_corresponding_institution": "UC Berkeley",
+    "version": "1",
+    "type": "new results",
+    "license": "cc_by_nc",
+    "abstract": "The neocortex is organized into discrete layers of excitatory neurons: layer 4 receives the densest  bottom up projection carrying external sensory data, while layers 2/3 and 5 receive  top down inputs from higher cortical areas that may convey sensory expectations and behavioral goals. A subset of cortical somatostatin (SST) neurons gate top down input and control sensory computation by inhibiting the apical dendrites of pyramidal cells in layers 2/3 and 5. However, it is unknown whether an analogous inhibitory mechanism separately and specifically controls activity in layer 4. We hypothesized that distinct SST circuits might exist to inhibit specific cortical layers. By enforcing layer-specific inhibition, distinct SST subnetworks could mediate pathway-specific gain control, such as regulating the balance between bottom up and top down input. Employing a combination of high precision circuit mapping, in vivo optogenetic perturbations, and single cell transcriptional profiling, we reveal distinct and complementary SST circuits that specifically and reciprocally interconnect with excitatory cells in either layer 4 or layers 2/3 and 5. Our data further define a transcriptionally distinct SST neuronal sub-class that powerfully gates bottom up sensory activity during active sensation by regulating layer 4 activity. This integrated paradigm further represents a potentially generalizable approach to identify and characterize neuronal cell types and reveal their in vivo function.",
+    "published": "10.7554/eLife.43696",
+    "server": "biorxiv",
+    "jatsxml": "https://www.biorxiv.org/content/early/2018/10/30/456574.source.xml"
+}

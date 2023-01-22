@@ -1,0 +1,23 @@
+{
+    "title": "Accurate age prediction from blood using of small set of DNA methylation sites and a cohort-based machine learning algorithm",
+    "authors": [
+        "Varshavsky, M.",
+        "Harari, G.",
+        "Glaser, B.",
+        "Dor, Y.",
+        "Shemer, R.",
+        "Kaplan, T."
+    ],
+    "date": "2023-01-21",
+    "category": "bioinformatics",
+    "doi": "10.1101/2023.01.20.524874",
+    "author_corresponding": "Tommy Kaplan",
+    "author_corresponding_institution": "The Hebrew University of Jerusalem",
+    "version": "1",
+    "type": "new results",
+    "license": "cc_by_nc_nd",
+    "abstract": "Chronological age prediction from DNA methylation sheds light on human aging, indicates poor health and predicts lifespan. Current clocks are mostly based on linear models from hundreds of methylation sites, and are not suitable for sequencing-based data. We present GP-age, an epigenetic clock for blood, that uses a non-linear cohort-based model of 11,910 blood methylomes. Using 30 CpG sites alone, GP-age outperforms state-of-the-art models, with a median accuracy of ~2 years on held-out blood samples, for both array and sequencing-based data. We show that aging-related changes occur at multiple neighboring CpGs, with far-reaching implications on aging research at the cellular level. By training three independent clocks, we show consistent deviations between predicted and actual age, suggesting individual rates of biological aging. Overall, we provide a compact yet accurate alternative to array-based clocks for blood, with future applications in longitudinal aging research, forensic profiling, and monitoring epigenetic processes in transplantation medicine and cancer.",
+    "published": "NA",
+    "server": "biorxiv",
+    "jatsxml": "https://www.biorxiv.org/content/early/2023/01/21/2023.01.20.524874.source.xml"
+}
