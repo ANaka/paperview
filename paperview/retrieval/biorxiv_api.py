@@ -8,7 +8,6 @@ import urllib
 import webbrowser
 from io import BytesIO
 from typing import Dict, List
-from urllib.request import urlopen
 
 import requests
 from bs4 import BeautifulSoup
@@ -17,7 +16,7 @@ from IPython.display import display
 from PIL import Image
 from pydantic import BaseModel, Field
 
-from paperview.retrieval import pdf_extraction, process_xml
+from paperview.retrieval import jats_xml_extraction, pdf_extraction, process_xml
 
 BASE_URL = "https://api.biorxiv.org"
 
@@ -92,30 +91,6 @@ ArticleDetail(
     def from_collection_dict(cls, collection_dict):
         collection_dict['authors'] = collection_dict['authors'].split('; ')
         return cls(**collection_dict)
-
-    def retrieve_jats_xml(self) -> str:
-        """
-        It takes an ArticleDetail object and returns the JATS XML for the article
-
-        Returns:
-          A string of JATS XML
-        """
-        return requests.get(self.jatsxml).text
-
-    @property
-    def base_xml_url(self):
-        return self.jatsxml.split('.source.xml')[0]
-
-    def get_image_url(self, slug: str):
-        return f'{self.base_xml_url}/{slug}.large.jpg'
-
-    def get_image(self, slug: str):
-        url = self.get_image_url(slug)
-        with urlopen(url) as response:
-            with BytesIO(response.read()) as file:
-                img = Image.open(file)
-                img_data = img.tobytes()  # shenanigans to get it in memory while file is open
-                return Image.frombytes(img.mode, img.size, img_data)
 
 
 def _query_content_detail_by_doi(
@@ -298,21 +273,10 @@ class Article(object):
     ):
         self.article_detail = article_detail
 
-        self.xml = self.article_detail.retrieve_jats_xml()
-        self.data = process_xml.extract_all(self.xml)
+        self.jatsxml = jats_xml_extraction.JATSXML(self.article_detail.jatsxml)
+        self.data = self.jatsxml.data
 
-        self.full_xml_retrieved = (self.data['all_text']['title'] == 'Results').any()
-
-        if self.full_xml_retrieved:
-            images = []
-            for ii, row in self.data['figure_captions'].iterrows():
-                slug = f'F{ii + 1}'
-                image_data = row.to_dict()
-                image_data['slug'] = slug
-                image_data['image'] = self.article_detail.get_image(slug)
-                images.append(image_data)
-            self.data['images'] = images
-        else:
+        if not self.jatsxml.full_xml_retrieved:
             with pdf_extraction.NamedTemporaryPDF(self.article_detail.pdf_url) as f:
                 _data = pdf_extraction.extract_all(
                     f,
