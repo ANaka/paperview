@@ -2,7 +2,7 @@
 
 This project is aimed at making it easier to quickly extract and summarize information from scientific manuscripts, especially preprints.
 
-It is also intended as a learning project for me to experiment with collaboratively coding with copilot and ChatGPT
+It is also intended as a learning project for me to experiment with collaboratively coding with copilot/ChatGPT, and perhaps for messing around with LLMs in other ways
 
 It is currently in a very early stage of development, and is not yet ready for use.
 
