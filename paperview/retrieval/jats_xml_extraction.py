@@ -1,7 +1,5 @@
 from io import BytesIO
-from urllib.error import HTTPError
 from urllib.parse import urlparse
-from urllib.request import urlopen
 
 import pandas as pd
 import requests
@@ -46,7 +44,7 @@ class JATSXML(object):
 
         self.xml_dict = xmlstr_to_dict(self.xml)
         self.data = self.parse_xml_dict(self.xml_dict)
-        self.full_xml_retrieved = (self.data['all_text']['title'] == 'Results').any()
+        self.full_xml_retrieved = self.check_if_is_fulltext_xml(self.data)
 
         if self.full_xml_retrieved:
             self.data['figure_captions']['slug'] = self.data['figure_captions']['label'].apply(
@@ -67,6 +65,19 @@ class JATSXML(object):
                 image_data.update(result)
                 images.append(image_data)
             self.data['images'] = images
+
+    @staticmethod
+    def check_if_is_fulltext_xml(parsed_xml_data: dict):
+        """
+        It checks if the parsed xml data is a full text xml file.
+
+        Args:
+          parsed_xml_data (dict): the parsed xml data
+
+        Returns:
+          A boolean value.
+        """
+        return (parsed_xml_data['all_text']['title'] == 'Results').any()
 
     @property
     def base_xml_url(self):
