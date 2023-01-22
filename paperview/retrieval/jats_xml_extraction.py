@@ -1,5 +1,7 @@
 from io import BytesIO
+from urllib.error import HTTPError
 from urllib.parse import urlparse
+from urllib.request import urlopen
 
 import pandas as pd
 import requests
@@ -126,19 +128,18 @@ class JATSXML(object):
             raise ValueError("Invalid URL")
         # Try to get the image
         try:
-            response = requests.get(url, stream=True)
-            # Check the status code is 200
-            if response.status_code != 200:
-                raise ValueError("Invalid status code")
+
             # Get the image data
-            img = Image.open(BytesIO(response.content))
-            img_data = img.tobytes()
+            with urlopen(url) as response:
+                with BytesIO(response.read()) as file:
+                    img = Image.open(file)
+                    img_data = img.tobytes()  # shenanigans to get it in memory while file is open
             # Return the image
             result = {
                 'image': Image.frombytes(img.mode, img.size, img_data),
                 'status': 'image retrieved',
             }
-        except requests.exceptions.RequestException as e:
+        except HTTPError as e:
             # Return None if there was an error
             result = {'status': 'image not found', 'image': None}
         return result
