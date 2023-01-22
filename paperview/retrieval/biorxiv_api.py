@@ -8,11 +8,13 @@ import urllib
 import webbrowser
 from io import BytesIO
 from typing import Dict, List
+from urllib.request import urlopen
 
 import requests
 from bs4 import BeautifulSoup
 from IPython.core.display import HTML
 from IPython.display import display
+from PIL import Image
 from pydantic import BaseModel, Field
 
 from paperview.retrieval import pdf_extraction, process_xml
@@ -106,6 +108,14 @@ ArticleDetail(
 
     def get_image_url(self, slug: str):
         return f'{self.base_xml_url}/{slug}.large.jpg'
+
+    def get_image(self, slug: str):
+        url = self.get_image_url(slug)
+        with urlopen(url) as response:
+            with BytesIO(response.read()) as file:
+                img = Image.open(file)
+                img_data = img.tobytes()  # shenanigans to get it in memory while file is open
+                return Image.frombytes(img.mode, img.size, img_data)
 
 
 def _query_content_detail_by_doi(
@@ -293,27 +303,27 @@ class Article(object):
 
         self.full_xml_retrieved = (self.data['all_text']['title'] == 'Results').any()
 
-        # see if we need to extract tables from the PDF
-        if len(self.data.get('table_captions')) > 0:
-            extract_tables_from_pdf = (
-                True if extract_tables_from_pdf is None else extract_tables_from_pdf
-            )
-        elif len(self.data.get('table_captions')) == 0:
-            extract_tables_from_pdf = (
-                False if extract_tables_from_pdf is None else extract_tables_from_pdf
-            )
-
-        with pdf_extraction.NamedTemporaryPDF(self.article_detail.pdf_url) as f:
-            _data = pdf_extraction.extract_all(
-                f,
-                extract_images=extract_images,
-                extract_text=extract_text_from_pdf,
-                extract_words=extract_words_from_pdf,
-                extract_tables=extract_tables_from_pdf,
-                resolution=resolution,
-                **kwargs,
-            )
-            self.data.update(_data)
+        if self.full_xml_retrieved:
+            images = []
+            for ii, row in self.data['figure_captions'].iterrows():
+                slug = f'F{ii + 1}'
+                image_data = row.to_dict()
+                image_data['slug'] = slug
+                image_data['image'] = self.article_detail.get_image(slug)
+                images.append(image_data)
+            self.data['images'] = images
+        else:
+            with pdf_extraction.NamedTemporaryPDF(self.article_detail.pdf_url) as f:
+                _data = pdf_extraction.extract_all(
+                    f,
+                    extract_images=extract_images,
+                    extract_text=extract_text_from_pdf,
+                    extract_words=extract_words_from_pdf,
+                    extract_tables=extract_tables_from_pdf,
+                    resolution=resolution,
+                    **kwargs,
+                )
+                self.data.update(_data)
 
     def __repr__(self):
         return f"""
