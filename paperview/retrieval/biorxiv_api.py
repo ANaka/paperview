@@ -1,5 +1,6 @@
 import base64
 import datetime
+import json
 import os
 import re
 import tempfile
@@ -7,6 +8,7 @@ import time
 import urllib
 import webbrowser
 from io import BytesIO
+from pathlib import Path
 from typing import Dict, List
 
 import requests
@@ -77,8 +79,12 @@ ArticleDetail(
     jatsxml='{self.jatsxml}')"""
 
     @property
+    def content_url(self):
+        return f'https://www.biorxiv.org/content/{self.doi}v{self.version}'
+
+    @property
     def pdf_url(self):
-        return f'https://www.biorxiv.org/content/{self.doi}v{self.version}.full.pdf'
+        return f'{self.content_url}.full.pdf'
 
     @classmethod
     def from_response(cls, response):
@@ -91,6 +97,12 @@ ArticleDetail(
     def from_collection_dict(cls, collection_dict):
         collection_dict['authors'] = collection_dict['authors'].split('; ')
         return cls(**collection_dict)
+
+    @classmethod
+    def from_json(cls, filepath):
+        with open(filepath, 'r') as f:
+            data = json.load(f)
+        return cls(**data)
 
 
 def _query_content_detail_by_doi(
@@ -323,8 +335,47 @@ Article(
         It takes an Article object, extracts the images and metadata from it, generates an HTML file
         that displays the images and metadata, and opens the HTML file in a web browser
         """
-
         return OverviewHtml.from_article(self, **kwargs)
+
+    def _mkdir(self, root: str = None, directory: str = None):
+        """
+        Creates a directory for saving
+        """
+
+        # use DOI as directory name if directory is not specified
+
+        directory = self.article_detail.doi if directory is None else directory
+        directory = Path(directory)
+        if root is not None:
+            directory = Path(root) / directory
+        os.makedirs(directory, exist_ok=True)
+        return directory
+
+    def _save_metadata(self, filename: str):
+        """
+        Saves the metadata in the article detail as a json
+        """
+        with open(filename, 'w') as f:
+            json.dump(self.article_detail.dict(), f, indent=4)
+
+    def _save_pdf(self, filename: str):
+        """
+        Saves the PDF
+        """
+        with open(filename, 'wb') as f:
+            f.write(requests.get(self.article_detail.pdf_url).content)
+
+    def _save_jatsxml(self, filename: str):
+        """Saves the raw jats xml"""
+        with open(filename, 'w') as f:
+            f.write(self.jatsxml.xml)
+
+    def save_images(self, directory: str):
+        # might want to update image data to include the filename
+        pass
+
+    def save_data(self, directory: str):
+        pass
 
 
 class OverviewHtml:
