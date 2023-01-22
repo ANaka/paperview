@@ -104,6 +104,10 @@ def test_query_recent_content():
     assert len(result) >= 0
 
 
+def test_detection_of_full_jats_xml():
+    pass
+
+
 # def test_create_Article_from_ArticleDetail(example_article_detail):
 #     article_detail = ArticleDetail(**example_article_detail)
 #     article = Article(article_detail)

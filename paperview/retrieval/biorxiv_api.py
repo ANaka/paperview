@@ -8,14 +8,16 @@ import urllib
 import webbrowser
 from io import BytesIO
 from typing import Dict, List
+from urllib.request import urlopen
 
 import requests
 from bs4 import BeautifulSoup
 from IPython.core.display import HTML
 from IPython.display import display
+from PIL import Image
 from pydantic import BaseModel, Field
 
-from paperview.retrieval import pdf_extraction
+from paperview.retrieval import pdf_extraction, process_xml
 
 BASE_URL = "https://api.biorxiv.org"
 
@@ -90,6 +92,30 @@ ArticleDetail(
     def from_collection_dict(cls, collection_dict):
         collection_dict['authors'] = collection_dict['authors'].split('; ')
         return cls(**collection_dict)
+
+    def retrieve_jats_xml(self) -> str:
+        """
+        It takes an ArticleDetail object and returns the JATS XML for the article
+
+        Returns:
+          A string of JATS XML
+        """
+        return requests.get(self.jatsxml).text
+
+    @property
+    def base_xml_url(self):
+        return self.jatsxml.split('.source.xml')[0]
+
+    def get_image_url(self, slug: str):
+        return f'{self.base_xml_url}/{slug}.large.jpg'
+
+    def get_image(self, slug: str):
+        url = self.get_image_url(slug)
+        with urlopen(url) as response:
+            with BytesIO(response.read()) as file:
+                img = Image.open(file)
+                img_data = img.tobytes()  # shenanigans to get it in memory while file is open
+                return Image.frombytes(img.mode, img.size, img_data)
 
 
 def _query_content_detail_by_doi(
@@ -263,12 +289,41 @@ class Article(object):
     def __init__(
         self,
         article_detail: ArticleDetail,
+        extract_images: bool = True,
+        extract_text_from_pdf: bool = True,
+        extract_words_from_pdf: bool = True,
+        extract_tables_from_pdf: bool = None,
+        resolution: int = 300,
         **kwargs,
     ):
         self.article_detail = article_detail
 
-        with pdf_extraction.NamedTemporaryPDF(self.article_detail.pdf_url) as f:
-            self.data = pdf_extraction.extract_all(f, **kwargs)
+        self.xml = self.article_detail.retrieve_jats_xml()
+        self.data = process_xml.extract_all(self.xml)
+
+        self.full_xml_retrieved = (self.data['all_text']['title'] == 'Results').any()
+
+        if self.full_xml_retrieved:
+            images = []
+            for ii, row in self.data['figure_captions'].iterrows():
+                slug = f'F{ii + 1}'
+                image_data = row.to_dict()
+                image_data['slug'] = slug
+                image_data['image'] = self.article_detail.get_image(slug)
+                images.append(image_data)
+            self.data['images'] = images
+        else:
+            with pdf_extraction.NamedTemporaryPDF(self.article_detail.pdf_url) as f:
+                _data = pdf_extraction.extract_all(
+                    f,
+                    extract_images=extract_images,
+                    extract_text=extract_text_from_pdf,
+                    extract_words=extract_words_from_pdf,
+                    extract_tables=extract_tables_from_pdf,
+                    resolution=resolution,
+                    **kwargs,
+                )
+                self.data.update(_data)
 
     def __repr__(self):
         return f"""
