@@ -228,15 +228,15 @@ def get_first_pub_date(someroot, format):
 def get_pub_date(someroot, format):
     selector = '/article/front/article-meta/pub-date'
     dt = get_pub_date_by_type(someroot, selector, 'pmc-release', format)
-    if dt['status'] is not 'ok':
+    if dt['status'] != 'ok':
         dt = get_pub_date_by_type(someroot, selector, 'epub', format)
-    if dt['status'] is not 'ok':
+    if dt['status'] != 'ok':
         dt = get_pub_date_by_type(someroot, selector, 'ppub', format)
-    if dt['status'] is not 'ok':
+    if dt['status'] != 'ok':
         dt = get_pub_date_by_type(someroot, selector, 'collection', format)
-    if dt['status'] is not 'ok':
+    if dt['status'] != 'ok':
         dt = get_pub_date_by_type(someroot, selector, None, format)
-    if dt['status'] is not 'ok':
+    if dt['status'] != 'ok':
         file_status_add_error('ERROR, element not found: ' + selector)
     return dt
 
