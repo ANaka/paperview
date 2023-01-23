@@ -1,9 +1,8 @@
 import datetime
-from typing import List
 
 import pytest
-import requests
 
+from paperview.examples import example_dir
 from paperview.retrieval.biorxiv_api import (
     Article,
     ArticleDetail,
@@ -127,3 +126,22 @@ def test_detection_of_full_jats_xml():
 
 #     article_detail = ArticleDetail(**example_article_detail)
 #     assert article.article_detail == article_detail
+
+
+@pytest.fixture
+def saved_metadata_fixture():
+    url_to_metadata_json = {}
+    for fp in example_dir.glob('**/metadata.json'):
+        article_detail = ArticleDetail.from_json(fp)
+        url_to_metadata_json[article_detail.content_url] = fp
+
+    urls = list(url_to_metadata_json.keys())
+    return url_to_metadata_json, urls
+
+
+def test_article_metadata_regression(saved_metadata_fixture):
+    url_to_metadata_json, urls = saved_metadata_fixture
+    for url in urls:
+        article_detail_from_json = ArticleDetail.from_json(url_to_metadata_json[url])
+        article_detail_from_web = get_content_detail_for_page(url)
+        assert article_detail_from_json == article_detail_from_web
