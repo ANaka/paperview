@@ -34,6 +34,7 @@ uvicorn = "^0.22.0"
 redis = "^4.5.5"
 celery = "^5.2.7"
 python-dotenv = "^1.0.0"
+feedparser = "^6.0.10"
 
 [tool.poetry.dev-dependencies]
 jupyter = "^1.0.0"
