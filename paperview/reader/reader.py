@@ -1,5 +1,7 @@
 from typing import List, Dict
 from datetime import datetime
+from time import mktime
+import time
 from feedparser import parse
 from models import Feed, Article, Subscription
 from tortoise.exceptions import DoesNotExist
@@ -43,17 +45,27 @@ async def mark_as_interesting(article_url: str, interesting: bool) -> bool:
 
 
 # A function to refresh feeds and add new articles
+
 async def refresh_feeds():
+    failed_feeds = []
     feeds = await Feed.all().prefetch_related('subscriptions')
 
     for feed in feeds:
-        parsed = feedparser.parse(feed.url)
-        for entry in parsed.entries:
-            await Article.get_or_create(
-                title=entry.title,
-                summary=entry.summary,
-                publication_date=entry.published_parsed,
-                author=entry.author,
-                url=entry.link,
-                feed_id=feed.id,
-            )
+        try:
+            parsed = feedparser.parse(feed.url)
+            for entry in parsed.entries:
+                defaults = {
+                    "title": entry.get("title", "No title provided"),
+                    "summary": entry.get("summary", "No summary provided"),
+                    "publication_date": datetime.fromtimestamp(mktime(entry.get("published_parsed", time.gmtime(0)))),
+                    "author": entry.get("author", "No author provided"),
+                    "url": entry.get("link", "No link provided"),
+                }
+                await Article.get_or_create(feed_id=feed.id, defaults=defaults)
+        except Exception as e:
+            failed_feeds.append({
+                "feed_id": feed.id,
+                "feed_url": feed.url,
+                "error": str(e),
+            })
+    return failed_feeds

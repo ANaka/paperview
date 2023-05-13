@@ -74,5 +74,5 @@ async def update_article(article: Article):
 
 @app.post("/refresh/")
 async def refresh():
-    await refresh_feeds()
-    return {"message": "Feeds refreshed successfully"}
+    resp = await refresh_feeds()
+    return {"message": "Feeds refreshed successfully", "resp": resp}
