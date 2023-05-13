@@ -47,6 +47,11 @@ class Article(BaseModel):
     url: str
     interesting: Optional[bool] = None
 
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to PaperView, your personal scientific literature RSS reader."}
+
+
 @app.post("/feeds/")
 async def create_feed(feed: Feed):
     if not await subscribe_to_feed(feed.url):
