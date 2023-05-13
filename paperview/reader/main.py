@@ -5,7 +5,7 @@ from tortoise.contrib.fastapi import register_tortoise, HTTPNotFoundError
 from pydantic import BaseModel
 from typing import List, Optional
 from celery import shared_task, Celery
-from reader import subscribe_to_feed, get_all_feeds, get_latest_articles, mark_as_interesting
+from reader import subscribe_to_feed, get_all_feeds, get_latest_articles, mark_as_interesting, refresh_feeds
 
 from config import settings
 
@@ -71,3 +71,8 @@ async def update_article(article: Article):
     if not await mark_as_interesting(article.url, article.interesting):
         raise HTTPException(status_code=404, detail="Article not found")
     return {"url": article.url, "interesting": article.interesting}
+
+@app.post("/refresh/")
+async def refresh():
+    await refresh_feeds()
+    return {"message": "Feeds refreshed successfully"}
